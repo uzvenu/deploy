@@ -13,7 +13,7 @@ o'z reposida saqlanadi.
 Image values:
 
 - backend: `uzvenu/backend` -> `helm/values.yaml`
-- agentlar: `charts/agents/values.yaml` (manual image release)
+- agentlar: `charts/agents/values.yaml` (chatbot CD yangilaydi)
 
 ## Release oqimi
 
@@ -22,8 +22,9 @@ Backend CD image'ni immutable commit SHA bilan push qiladi, so'ng o'z reposidagi
 yoki deploy token kerak emas. Argo CD chartni bu repodan, values'ni backend reposidan
 o'qib render qiladi.
 
-Agent image'i commit SHA bilan build/push qilinadi va `charts/agents/values.yaml`
-image tagi yangilanadi. Agent release manual bo'lgani uchun cross-repo credential kerak emas.
+Chatbot CD image'ni commit SHA bilan build/push qiladi va `charts/agents/values.yaml`
+image tagini yangilaydi. Cross-repo yozish uchun chatbot Actions'da faqat shu repoga
+write huquqli `DEPLOY_REPO_TOKEN` ishlatiladi.
 
 ## Lokal tekshiruv
 

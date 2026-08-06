@@ -1,7 +1,7 @@
 # GitOps repository rules
 
 - `charts/venu` va `charts/agents` production Helm source-of-truth hisoblanadi.
-- Backend image tagi `backend/helm/values.yaml`da; manual agent tagi `charts/agents/values.yaml`da saqlanadi.
+- Backend image tagi `backend/helm/values.yaml`da; agent tagi `charts/agents/values.yaml`da saqlanadi va chatbot CD tomonidan yangilanadi.
 - Secret qiymatlarini Gitga yozmang; faqat Secret nomlari chartlarda bo'lishi mumkin.
 - Live tracked resurslarni `kubectl patch/apply/set image` bilan o'zgartirmang.
 - Har o'zgarishdan keyin ikkala chart uchun `helm lint` va real values bilan `helm template` ishlashi shart.
