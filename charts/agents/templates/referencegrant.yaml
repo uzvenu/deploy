@@ -1,0 +1,18 @@
+# venu ns'dagi venu-api HTTPRoute'i /ai/* ni shu ns'dagi venu-agent servisiga
+# yuboradi. Gateway API'da namespace'lararo backendRef DEFAULT bo'yicha taqiqlangan
+# (aks holda boshqa ns o'z trafigini bu yerga tortib olardi) — ruxsat shu grant
+# bilan, faqat venu ns'dan va faqat Service uchun beriladi.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: venu-httproute-to-agents
+  labels:
+    app.kubernetes.io/part-of: agents
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: venu
+  to:
+    - group: ""
+      kind: Service

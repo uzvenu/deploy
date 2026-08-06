@@ -1,0 +1,106 @@
+# Lattaputta do'koni uchun AI chatbot.
+#
+# Image venu-agent bilan BIR XIL — farq config'da: CATALOG_PROVIDER=legacy
+# (eski PHP/6Valley API) va BRAND_* Lattaputta'niki. Telegram long-poll +
+# Instagram/WhatsApp webhook (webhook shu portga keladi, lattaputta.iprogrammer.uz
+# HTTPRoute'i orqali).
+# Google Sheets bilim bazasi uchun service account kaliti mount qilinadi.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lattaputta-agent
+  labels:
+    app.kubernetes.io/name: lattaputta-agent
+    app.kubernetes.io/part-of: agents
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lattaputta-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lattaputta-agent
+        app.kubernetes.io/part-of: agents
+    spec:
+      imagePullSecrets:
+        - name: venu-registry
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          # `http` rejimi ATAYLAB yo'q: u /chat va /chat/stream ni ochib qo'yardi,
+          # bu deployment'da esa SERVER_AUTH_TOKEN yo'q — ya'ni internetga
+          # autentifikatsiyasiz LLM endpoint chiqib ketardi. Instagram/WhatsApp
+          # webhook'lari va /healthz baribir shu portda ishlaydi.
+          args: ["-mode", "telegram,instagram,whatsapp"]
+          ports:
+            - name: http
+              containerPort: 8090
+          env:
+            - name: GOOGLE_CREDENTIALS_FILE
+              value: /secrets/google/creds.json
+            # Xato ogohlantirishlari: WARN va undan yuqori loglar shu Telegram
+            # chatiga ketadi. Sir emas — chat ID, shuning uchun manifestda.
+            - name: ALERT_CHAT_ID
+              value: "1769851684"
+            - name: ALERT_SOURCE
+              value: "Lattaputta"
+          envFrom:
+            - secretRef:
+                name: lattaputta-agent-env
+          volumeMounts:
+            - name: google-creds
+              mountPath: /secrets/google
+              readOnly: true
+          # TCP probe, httpGet emas: /healthz ni faqat `http` rejimi ro'yxatga
+          # oladi, bu yerda esa u ataylab o'chiq. Port ochilgani — webhook'lar
+          # qabul qilishga tayyor degani.
+          # Katalog indeksi serverdan oldin quriladi — startup probe shunga vaqt beradi.
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          # 238 mahsulotda 20Mi ishlatiladi, ya'ni hozir keng. Zaxira katalog o'sishi
+          # uchun: indeks xotirasi mahsulot soniga to'g'ri proporsional (har vektor
+          # 1536 x float64 = 12 KB) va cho'qqida uch nusxa bo'ladi — venu 9030
+          # mahsulotda 512Mi ga sig'may OOMKilled bo'lgan.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: google-creds
+          secret:
+            secretName: google-creds
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lattaputta-agent
+  labels:
+    app.kubernetes.io/name: lattaputta-agent
+    app.kubernetes.io/part-of: agents
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: lattaputta-agent
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

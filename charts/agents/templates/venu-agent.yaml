@@ -1,0 +1,108 @@
+# Venu do'koni uchun AI chatbot.
+#
+# Image lattaputta-agent bilan BIR XIL — farq faqat config'da: bu yerda
+# CATALOG_PROVIDER=modern (yangi Go backend API) va BRAND_* Venu'niki.
+# HTTP rejimi /chat, /chat/stream (SSE) va /healthz beradi; venu ns'dagi
+# venu-api HTTPRoute'i /ai/* ni shu servisga yuboradi (prefiks olib tashlanadi).
+# replicas:1 — suhbat tarixi Postgres'da, lekin katalog indeksi xotirada.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: venu-agent
+  labels:
+    app.kubernetes.io/name: venu-agent
+    app.kubernetes.io/part-of: agents
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: venu-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: venu-agent
+        app.kubernetes.io/part-of: agents
+    spec:
+      imagePullSecrets:
+        - name: venu-registry
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          args: ["-mode", "http,telegram"]
+          ports:
+            - name: http
+              containerPort: 8090
+          env:
+            # Bilim bazasi Google Sheets'dan keladi; qaysi jadval/tab ekani
+            # secret'da (KB_SHEET_ID + KB_SHEET_RANGE). Faqat KB — guruh/sotuvchi
+            # tab'lari boshqa do'konniki, shuning uchun GOOGLE_SHEET_ID berilmaydi.
+            - name: GOOGLE_CREDENTIALS_FILE
+              value: /secrets/google/creds.json
+            # Xato ogohlantirishlari: WARN va undan yuqori loglar shu Telegram
+            # chatiga ketadi. Sir emas — chat ID, shuning uchun manifestda.
+            - name: ALERT_CHAT_ID
+              value: "1769851684"
+            - name: ALERT_SOURCE
+              value: "Venu"
+          envFrom:
+            - secretRef:
+                name: venu-agent-env
+          volumeMounts:
+            - name: google-creds
+              mountPath: /secrets/google
+              readOnly: true
+          # startupProbe: boot'da butun katalog indekslanadi (eski backendda ~9000
+          # mahsulot, sahifasiga 50 tadan) va HTTP server shundan KEYIN ko'tariladi.
+          # Usiz liveness podni indeks qurilib bo'lguncha o'ldirib, restart siklini
+          # boshlab yuborardi. 60 x 10s = 10 daqiqagacha sabr qiladi.
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          # 9030 mahsulot uchun: har vektor 1536 x float64 = 12 KB, ya'ni indeks
+          # ~111 MB. Yuklashda kesh nusxasi ham xotirada turadi, fonda yangilanish
+          # esa ESKI indeks tirikligida YANGISINI quradi — cho'qqida uch nusxa.
+          # 512Mi da pod OOMKilled bo'lib qayta-qayta ishga tushdi.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+      volumes:
+        - name: google-creds
+          secret:
+            secretName: google-creds
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: venu-agent
+  labels:
+    app.kubernetes.io/name: venu-agent
+    app.kubernetes.io/part-of: agents
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: venu-agent
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

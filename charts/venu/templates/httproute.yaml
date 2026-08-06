@@ -1,0 +1,53 @@
+# Routes venu-api.iprogrammer.uz through the shared cluster gateway
+# (default/main-gateway, nginx Gateway API). The host nginx LB terminates TLS and
+# proxies to the gateway NodePort.
+#
+# Two backends on one host:
+#   /ai/*  -> venu-agent (the AI chatbot, now in the `agent` namespace), with the
+#             /ai prefix stripped so the agent still sees /chat, /chat/stream and
+#             /healthz at its root. The cross-namespace reference is allowed by a
+#             ReferenceGrant in charts/agents.
+#   /*     -> venu-api (everything else). Longest-prefix wins, so /ai never
+#             falls through to the API.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: venu-api
+  labels:
+    app.kubernetes.io/part-of: venu
+spec:
+  hostnames:
+    - venu-api.iprogrammer.uz
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: main-gateway
+      namespace: default
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /ai
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: venu-agent
+          namespace: agent
+          port: 8080
+          weight: 1
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: venu-api
+          port: 8080
+          weight: 1

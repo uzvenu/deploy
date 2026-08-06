@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: venu
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: venu
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/uzvenu/deploy.git
+      targetRevision: master
+      path: charts/venu
+      helm:
+        releaseName: venu
+        valueFiles:
+          - $values/helm/values.yaml
+    - repoURL: https://github.com/uzvenu/backend.git
+      targetRevision: master
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: venu
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        maxDuration: 3m
+        factor: 2

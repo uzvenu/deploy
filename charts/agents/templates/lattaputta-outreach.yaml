@@ -1,0 +1,92 @@
+# Rozilik bergan Telegram username'larga bir martalik xabar yuboruvchi MTProto worker.
+# Dry-run default: Telegram session bo'lmasa ham Sheet queue'ni tayyorlaydi, xabar yubormaydi.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lattaputta-outreach
+  labels:
+    app.kubernetes.io/name: lattaputta-outreach
+    app.kubernetes.io/part-of: agents
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lattaputta-outreach
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lattaputta-outreach
+        app.kubernetes.io/part-of: agents
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: venu-registry
+      initContainers:
+        - name: prepare-session
+          image: busybox:1.37
+          command: ["sh", "-ec"]
+          args:
+            - if [ -f /session-src/session.json ]; then install -m 0600 -o 65532 -g 65532 /session-src/session.json /session/session.json; fi
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER"]
+          volumeMounts:
+            - name: session-source
+              mountPath: /session-src
+              readOnly: true
+            - name: session-work
+              mountPath: /session
+      containers:
+        - name: outreach
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/app/outreach"]
+          args: ["-config", "/app/configs/config.yaml"]
+          env:
+            - name: GOOGLE_CREDENTIALS_FILE
+              value: /secrets/google/creds.json
+            - name: OUTREACH_TELEGRAM_SESSION_FILE
+              value: /session/session.json
+          envFrom:
+            - secretRef:
+                name: lattaputta-outreach-env
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: google-creds
+              mountPath: /secrets/google
+              readOnly: true
+            - name: session-work
+              mountPath: /session
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+      volumes:
+        - name: google-creds
+          secret:
+            secretName: google-creds
+        - name: session-source
+          secret:
+            secretName: lattaputta-outreach-session
+            defaultMode: 0400
+            optional: true
+        - name: session-work
+          emptyDir: {}

@@ -1,0 +1,31 @@
+# lattaputta.iprogrammer.uz — Lattaputta chatboti (sayt widgeti + Meta webhook'lari).
+# Xost nginx TLS'ni yopadi va default/main-gateway ga uzatadi.
+#
+# Venu agenti alohida host olmaydi: u venu-api.iprogrammer.uz/ai/* orqali keladi,
+# u yerdagi HTTPRoute venu ns'da turadi va shu ns'dagi servisga referencegrant.yaml
+# bilan ruxsat oladi.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: lattaputta-agent
+  labels:
+    app.kubernetes.io/part-of: agents
+spec:
+  hostnames:
+    - lattaputta.iprogrammer.uz
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: main-gateway
+      namespace: default
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: lattaputta-agent
+          port: 8080
+          weight: 1

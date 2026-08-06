@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agents
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: agents
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/uzvenu/deploy.git
+      targetRevision: master
+      path: charts/agents
+      helm:
+        releaseName: agents
+        valueFiles:
+          - $values/helm/values.yaml
+    - repoURL: https://github.com/uzvenu/chatbot.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: agent
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        maxDuration: 3m
+        factor: 2

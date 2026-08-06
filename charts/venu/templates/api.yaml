@@ -1,0 +1,106 @@
+# Venu API — the HTTP server (cmd/api). Config comes entirely from the
+# venu-env secret (APP_* env); RS256 JWT keys are mounted read-only at
+# /app/keys (the default APP_JWT_*_KEY_PATH resolves under the /app workdir).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: venu-api
+  labels:
+    app.kubernetes.io/name: venu-api
+    app.kubernetes.io/part-of: venu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: venu-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: venu-api
+        app.kubernetes.io/part-of: venu
+      # /metrics has no auth and no rate limit by design (Prometheus scrapes
+      # it every few seconds). It is safe only because nothing routes it from
+      # outside: the HTTPRoute exposes the API paths, not /metrics, so the
+      # endpoint is reachable exclusively from inside the cluster. Keep it that
+      # way — never add /metrics to an HTTPRoute/Ingress.
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: /metrics
+    spec:
+      imagePullSecrets:
+        - name: venu-registry
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/app/api"]
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: venu-env
+          env:
+            - name: APP_AI_ENABLED
+              value: "true"
+            - name: APP_AI_BASE_URL
+              # The API runs in `venu`, while this Service runs in `agent`.
+              # A short service name only resolves inside the caller's namespace.
+              value: http://venu-agent.agent.svc.cluster.local:8080
+            - name: APP_AI_TIMEOUT
+              value: 90s
+          volumeMounts:
+            - name: jwt-keys
+              mountPath: /app/keys
+              readOnly: true
+            - name: storage
+              mountPath: /app/storage
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+      volumes:
+        - name: jwt-keys
+          secret:
+            secretName: venu-jwt
+            # 0444, not 0400: secret files are owned by root but the container
+            # runs as non-root 'app', which must be able to read the keys.
+            defaultMode: 0444
+            items:
+              - key: jwt_private.pem
+                path: jwt_private.pem
+              - key: jwt_public.pem
+                path: jwt_public.pem
+        - name: storage
+          emptyDir: {} # local storage driver is ephemeral; switch to S3/MinIO for durability
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: venu-api
+  labels:
+    app.kubernetes.io/name: venu-api
+    app.kubernetes.io/part-of: venu
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: venu-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

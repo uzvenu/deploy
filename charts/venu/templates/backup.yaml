@@ -1,0 +1,83 @@
+# Nightly logical backup of the Venu Postgres.
+#
+# pg_dump -Fc (custom format) into its own PVC, one file per day, 7 days kept.
+# Credentials come from the same venu-postgres Secret the database itself uses
+# (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB) — nothing is duplicated and
+# nothing lives in git.
+#
+# Restore procedure and the restore drill live in docs/OPERATIONS.md.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backups
+  labels:
+    app.kubernetes.io/name: postgres-backup
+    app.kubernetes.io/part-of: venu
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      # 7 daily -Fc dumps of a 10Gi database compress well; revisit when a
+      # single dump approaches 1Gi.
+      storage: 10Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  labels:
+    app.kubernetes.io/name: postgres-backup
+    app.kubernetes.io/part-of: venu
+spec:
+  # 22:00 UTC = 03:00 Asia/Tashkent. Written in UTC on purpose: spec.timeZone
+  # needs Kubernetes >= 1.27 and buys nothing here.
+  schedule: "0 22 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: postgres-backup
+            app.kubernetes.io/part-of: venu
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: pg-dump
+              # Same major version as the server in postgres.yaml — pg_dump
+              # must not be older than the server it dumps.
+              image: postgres:16-alpine
+              envFrom:
+                - secretRef:
+                    name: venu-postgres
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  export PGPASSWORD="$POSTGRES_PASSWORD"
+                  out="/backups/venu-$(date +%Y-%m-%d).dump"
+                  echo "dumping to $out"
+                  pg_dump -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$out"
+                  echo "dump done: $(du -h "$out" | cut -f1)"
+                  # Simple rotation: anything older than 7 days goes.
+                  find /backups -name 'venu-*.dump' -mtime +7 -delete
+                  echo "kept:"; ls -lh /backups
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: postgres-backups

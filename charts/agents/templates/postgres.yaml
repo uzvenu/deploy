@@ -1,0 +1,118 @@
+# Chatbotlar uchun YAGONA Postgres. Har do'konga alohida instance ko'tarish
+# o'rniga bitta pod + bitta disk; ma'lumot esa DATABASE bo'yicha ajratiladi
+# (venu / lattaputta), shuning uchun bir do'konning bilim bazasi va suhbatlari
+# ikkinchisiniki bilan aralashmaydi.
+#
+# HA emas: ma'lumot bitta node diskida. Yo'qotib bo'lmaydigan narsa saqlashdan
+# oldin zaxira (pg_dump cron yoki managed DB) qo'ying.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: agents
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Databaselar birinchi ishga tushishda yaratiladi. Skript IDEMPOTENT emas —
+# initdb uni faqat bo'sh PGDATA da bir marta ishlatadi, keyingi restartlarda
+# umuman chaqirilmaydi (mavjud ma'lumot xavfsiz).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: agents
+data:
+  10-databases.sh: |
+    #!/bin/sh
+    set -e
+    for db in venu lattaputta; do
+      psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+        -c "CREATE DATABASE \"$db\" OWNER \"$POSTGRES_USER\";"
+    done
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: agents
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # RWO volume: bitta disk ustida ikkita pod ishlamasin
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/part-of: agents
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: agents-postgres # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
+        - name: init
+          configMap:
+            name: postgres-init
+            defaultMode: 0o755
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: agents
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
