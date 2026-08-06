@@ -13,7 +13,7 @@ o'z reposida saqlanadi.
 Image values:
 
 - backend: `uzvenu/backend` -> `helm/values.yaml`
-- agentlar: `uzvenu/chatbot` -> `helm/values.yaml`
+- agentlar: `charts/agents/values.yaml` (manual image release)
 
 ## Release oqimi
 
@@ -22,9 +22,8 @@ Backend CD image'ni immutable commit SHA bilan push qiladi, so'ng o'z reposidagi
 yoki deploy token kerak emas. Argo CD chartni bu repodan, values'ni backend reposidan
 o'qib render qiladi.
 
-Agent image'i commit SHA bilan build/push qilinadi va `uzvenu/chatbot` reposidagi
-`helm/values.yaml` tagi yangilanadi. Argo CD shu qiymatni `charts/agents` bilan render
-qiladi.
+Agent image'i commit SHA bilan build/push qilinadi va `charts/agents/values.yaml`
+image tagi yangilanadi. Agent release manual bo'lgani uchun cross-repo credential kerak emas.
 
 ## Lokal tekshiruv
 
@@ -34,7 +33,7 @@ Helm o'rnatilgan bo'lsa:
 helm lint charts/venu
 helm lint charts/agents
 helm template venu charts/venu -f ../backend/helm/values.yaml >/dev/null
-helm template agents charts/agents -f ../agent/helm/values.yaml >/dev/null
+helm template agents charts/agents >/dev/null
 ```
 
 Repo private. Argo CD `uzvenu/deploy`, `uzvenu/backend` va `uzvenu/chatbot` repolarini

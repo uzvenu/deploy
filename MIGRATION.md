@@ -6,8 +6,8 @@ o'zgartirmaydi. Faqat Argo CD render manbasi Kustomize'dan Helm multi-source'ga 
 ## Old shartlar
 
 1. Ushbu repo `uzvenu/deploy` private reposining `master` branchiga push qilingan bo'lsin.
-2. `uzvenu/backend`da `helm/values.yaml`, `uzvenu/chatbot`da `helm/values.yaml` push qilingan bo'lsin.
-3. Argo CD uchala private reponi o'qiy olsin.
+2. `uzvenu/backend`da `helm/values.yaml` push qilingan bo'lsin.
+3. Argo CD private backend values reposini va public chart reposini o'qiy olsin.
 4. Chartlar lint va template tekshiruvdan o'tsin.
 
 ## Cutover
