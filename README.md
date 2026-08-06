@@ -36,5 +36,5 @@ helm template venu charts/venu -f ../backend/helm/values.yaml >/dev/null
 helm template agents charts/agents >/dev/null
 ```
 
-Repo private. Argo CD `uzvenu/deploy`, `uzvenu/backend` va `uzvenu/chatbot` repolarini
-o'qiy olishi kerak. Secret qiymatlari Gitga kiritilmaydi.
+Chart repo public, chunki unda secret qiymatlari yo'q; private backend values reposi
+Argo CD repository credential orqali o'qiladi. Secret qiymatlari Gitga kiritilmaydi.
