@@ -5,22 +5,27 @@ o'zgartirmaydi. Faqat Argo CD render manbasi Kustomize'dan Helm multi-source'ga 
 
 ## Old shartlar
 
-1. Ushbu repo `uzvenu/deploy` private reposining `master` branchiga push qilingan bo'lsin.
-2. `uzvenu/backend`da `helm/values.yaml` push qilingan bo'lsin.
-3. Argo CD private backend values reposini va public chart reposini o'qiy olsin.
-4. Chartlar lint va template tekshiruvdan o'tsin.
+1. `uzvenu/backend`da `helm/values.yaml` push qilingan bo'lsin.
+2. `uzvenu/chatbot` `main` branchida `helm/values.yaml` va same-repo tag bump qiladigan CD workflow push qilingan bo'lsin.
+3. Argo CD private backend va chatbot values repolarini hamda public chart reposini o'qiy olsin.
+4. Ushbu repo `uzvenu/deploy` `master` branchiga faqat values fayllari mavjudligi tekshirilgandan keyin push qilinsin.
+5. Ikkala chart real application values bilan lint va template tekshiruvdan o'tsin.
 
 ## Cutover
+
+Application'larni bir vaqtda ko'r-ko'rona apply qilmang. Avval har bir external values fayli target branchda borligini va Argo repository credential ishlashini tekshiring. Agent cutover tartibi qat'iy: chatbot values -> chatbot repo credential -> deploy Argo manifest.
 
 ```bash
 kubectl config current-context
 kubectl cluster-info
 kubectl auth can-i patch applications.argoproj.io -n argocd
-kubectl apply -f argocd/venu.yaml -f argocd/agents.yaml
-kubectl get applications.argoproj.io venu agents -n argocd
+kubectl apply -f argocd/venu.yaml
+kubectl get application venu -n argocd
+kubectl apply -f argocd/agents.yaml
+kubectl get application agents -n argocd
 ```
 
-Ikkalasi `Synced` va `Healthy` bo'lgach, workloadlarni tekshiring:
+Har bir Application alohida `Synced` va `Healthy` bo'lgach, workloadlarni tekshiring:
 
 ```bash
 kubectl get deployment -n venu
@@ -33,10 +38,13 @@ kubectl rollout status deployment/lattaputta-agent -n agent
 
 ## Rollback
 
-Backend raw manifestlari hali `master`da mavjud paytda eski source'lar:
+Eski raw `deploy/k8s` yoki `deploy/agents` pathlariga qaytmang — ular joriy source-of-truth emas.
 
-- `venu`: `https://github.com/uzvenu/backend.git`, path `deploy/k8s`, revision `master`
-- `agents`: `https://github.com/uzvenu/backend.git`, path `deploy/agents`, revision `master`
+Agent values source rollback'i kerak bo'lsa:
 
-Backenddan eski `deploy/` katalogini faqat Helm cutover muvaffaqiyatli bo'lgandan keyin
-push qiling.
+1. `uzvenu/chatbot/helm/values.yaml`dagi joriy immutable tagni oling.
+2. `charts/agents/values.yaml`dagi tagni aynan shu qiymatga tenglashtirib `uzvenu/deploy`ga push qiling.
+3. `argocd/agents.yaml`ni `charts/agents` single-source ko'rinishiga qaytaring.
+4. Application manifestini yangilang va `Synced`/`Healthy` holatini tekshiring.
+
+Tagni oldindan tenglashtirish chart defaultidagi eski image'ga kutilmagan rollbackni oldini oladi. Backend rollback'i ham shu tamoyilda: external values source olib tashlanishidan oldin joriy tag chart values'ga ko'chiriladi.
