@@ -1,6 +1,6 @@
 # Chatbotlar uchun YAGONA Postgres. Har do'konga alohida instance ko'tarish
 # o'rniga bitta pod + bitta disk; ma'lumot esa DATABASE bo'yicha ajratiladi
-# (venu / lattaputta), shuning uchun bir do'konning bilim bazasi va suhbatlari
+# (venu / lattaputta / motiv), shuning uchun bir do'konning bilim bazasi va suhbatlari
 # ikkinchisiniki bilan aralashmaydi.
 #
 # HA emas: ma'lumot bitta node diskida. Yo'qotib bo'lmaydigan narsa saqlashdan
@@ -33,7 +33,7 @@ data:
   10-databases.sh: |
     #!/bin/sh
     set -e
-    for db in venu lattaputta; do
+    for db in venu lattaputta motiv; do
       psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
         -c "CREATE DATABASE \"$db\" OWNER \"$POSTGRES_USER\";"
     done

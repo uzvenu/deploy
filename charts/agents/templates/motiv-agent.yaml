@@ -1,0 +1,57 @@
+# Motiv uchun alohida Telegram chatbot.
+#
+# Venu katalogi, Google Sheets va LLM konfiguratsiyasidan boshlang'ich manba sifatida
+# foydalanadi. PostgreSQL `motiv-agent-env`da, Telegram token esa faqat
+# `motiv-agent-token` Secret'ida saqlanadi.
+# HTTP/Instagram/WhatsApp ataylab yo'q — hozir faqat Telegram long-polling ishlaydi.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: motiv-agent
+  labels:
+    app.kubernetes.io/name: motiv-agent
+    app.kubernetes.io/part-of: agents
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: motiv-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: motiv-agent
+        app.kubernetes.io/part-of: agents
+    spec:
+      imagePullSecrets:
+        - name: venu-registry
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          args: ["-mode", "telegram"]
+          env:
+            - name: GOOGLE_CREDENTIALS_FILE
+              value: /secrets/google/creds.json
+            - name: ALERT_SOURCE
+              value: "Motiv"
+          envFrom:
+            - secretRef:
+                name: motiv-agent-env
+            - secretRef:
+                name: motiv-agent-token
+          volumeMounts:
+            - name: google-creds
+              mountPath: /secrets/google
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+      volumes:
+        - name: google-creds
+          secret:
+            secretName: google-creds
