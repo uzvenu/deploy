@@ -28,7 +28,7 @@ spec:
         - name: venu-registry
       containers:
         - name: agent
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.motivImage.repository }}:{{ .Values.motivImage.tag }}"
           args: ["-mode", "telegram"]
           env:
             - name: GOOGLE_CREDENTIALS_FILE

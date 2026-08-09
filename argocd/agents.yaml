@@ -15,9 +15,13 @@ spec:
         releaseName: agents
         valueFiles:
           - $values/helm/values.yaml
+          - $motivValues/helm/values.yaml
     - repoURL: https://github.com/uzvenu/chatbot.git
       targetRevision: main
       ref: values
+    - repoURL: https://github.com/uzvenu/support.git
+      targetRevision: main
+      ref: motivValues
   destination:
     server: https://kubernetes.default.svc
     namespace: agent
