@@ -30,7 +30,7 @@ spec:
       containers:
         - name: agent
           image: "{{ .Values.motivImage.repository }}:{{ .Values.motivImage.tag }}"
-          args: ["-mode", "telegram"]
+          args: ["-mode", "telegram,instagram"]
           ports:
             - name: http
               containerPort: 8090
