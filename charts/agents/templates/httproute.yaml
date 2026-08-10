@@ -29,3 +29,31 @@ spec:
           name: lattaputta-agent
           port: 8080
           weight: 1
+---
+# Motiv Instagram webhook'i uchun alohida host. DNS tashqi nginx IP'iga
+# yo'naltirilgach callback: https://motiv.iprogrammer.uz/webhooks/instagram
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: motiv-agent
+  labels:
+    app.kubernetes.io/part-of: agents
+spec:
+  hostnames:
+    - motiv.iprogrammer.uz
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: main-gateway
+      namespace: default
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /webhooks/instagram
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: motiv-agent
+          port: 8080
+          weight: 1

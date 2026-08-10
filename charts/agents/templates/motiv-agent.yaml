@@ -3,7 +3,8 @@
 # Venu katalogi, Google Sheets va LLM konfiguratsiyasidan boshlang'ich manba sifatida
 # foydalanadi. PostgreSQL `motiv-agent-env`da, Telegram token esa faqat
 # `motiv-agent-token` Secret'ida saqlanadi.
-# HTTP/Instagram/WhatsApp ataylab yo'q — hozir faqat Telegram long-polling ishlaydi.
+# Instagram webhook uchun Service/HTTPRoute tayyor. Account credentiallari kelguncha
+# process faqat Telegram long-polling rejimida qoladi.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,6 +31,9 @@ spec:
         - name: agent
           image: "{{ .Values.motivImage.repository }}:{{ .Values.motivImage.tag }}"
           args: ["-mode", "telegram"]
+          ports:
+            - name: http
+              containerPort: 8090
           env:
             - name: GOOGLE_CREDENTIALS_FILE
               value: /secrets/google/creds.json
@@ -55,3 +59,19 @@ spec:
         - name: google-creds
           secret:
             secretName: google-creds
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: motiv-agent
+  labels:
+    app.kubernetes.io/name: motiv-agent
+    app.kubernetes.io/part-of: agents
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: motiv-agent
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
