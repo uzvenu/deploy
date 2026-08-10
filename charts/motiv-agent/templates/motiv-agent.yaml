@@ -1,10 +1,6 @@
-# Motiv uchun alohida Telegram chatbot.
-#
-# Venu katalogi, Google Sheets va LLM konfiguratsiyasidan boshlang'ich manba sifatida
-# foydalanadi. PostgreSQL `motiv-agent-env`da, Telegram token esa faqat
-# `motiv-agent-token` Secret'ida saqlanadi.
-# Instagram webhook uchun Service/HTTPRoute tayyor. Account credentiallari kelguncha
-# process faqat Telegram long-polling rejimida qoladi.
+# Motiv uchun mustaqil Telegram va Instagram Google Sheets Q&A chatboti.
+# PostgreSQL/config `motiv-agent-env`da, Telegram token esa faqat
+# `motiv-agent-token` Secret'ida saqlanadi; Secret qiymatlari chartga kirmaydi.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

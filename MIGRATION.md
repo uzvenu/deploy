@@ -9,7 +9,7 @@ o'zgartirmaydi. Faqat Argo CD render manbasi Kustomize'dan Helm multi-source'ga 
 2. `uzvenu/chatbot` `main` branchida `helm/values.yaml` va same-repo tag bump qiladigan CD workflow push qilingan bo'lsin.
 3. Argo CD private backend va chatbot values repolarini hamda public chart reposini o'qiy olsin.
 4. Ushbu repo `uzvenu/deploy` `master` branchiga faqat values fayllari mavjudligi tekshirilgandan keyin push qilinsin.
-5. Ikkala chart real application values bilan lint va template tekshiruvdan o'tsin.
+5. `charts/venu`, `charts/agents` va `charts/motiv-agent` real application values bilan lint va template tekshiruvdan o'tsin.
 
 ## Cutover
 
@@ -23,6 +23,8 @@ kubectl apply -f argocd/venu.yaml
 kubectl get application venu -n argocd
 kubectl apply -f argocd/agents.yaml
 kubectl get application agents -n argocd
+# Motiv split alohida kontrolli tartibda: MOTIV_SPLIT.md
+kubectl get application motiv-agent -n argocd
 ```
 
 Har bir Application alohida `Synced` va `Healthy` bo'lgach, workloadlarni tekshiring:

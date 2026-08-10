@@ -8,12 +8,15 @@ o'z reposida saqlanadi.
 
 - `charts/venu/` — Venu API, worker, PostgreSQL, backup va HTTPRoute.
 - `charts/agents/` — Venu/Lattaputta agentlari, outreach, PostgreSQL va routes.
-- `argocd/` — multi-source Argo CD `Application` manifestlari.
+- `charts/motiv-agent/` — mustaqil Motiv Deployment, Service va HTTPRoute.
+- `argocd/agents.yaml` — Venu/Latta Putta Application.
+- `argocd/motiv-agent.yaml` — Motiv Application.
 
 Image values:
 
 - backend: `uzvenu/backend` -> `helm/values.yaml`
-- agentlar: `uzvenu/chatbot` -> `helm/values.yaml`
+- Venu/Latta Putta agentlari: `uzvenu/chatbot` -> `helm/values.yaml`
+- Motiv: `uzvenu/support` -> `helm/values.yaml`
 
 ## Release oqimi
 
@@ -24,8 +27,16 @@ o'qib render qiladi.
 
 Chatbot CD image'ni commit SHA bilan build/push qiladi va o'z reposidagi
 `helm/values.yaml` image tagini standart `GITHUB_TOKEN` bilan yangilaydi. Argo CD
-`charts/agents` chartini shu external values source bilan render qiladi; cross-repo
-deploy token kerak emas.
+`charts/agents` chartini shu external values source bilan render qiladi. Motiv CD esa
+`uzvenu/support/helm/values.yaml` tagini yangilaydi va `motiv-agent` Application
+`charts/motiv-agent`ni shu values bilan render qiladi; cross-repo deploy token kerak emas.
+
+## Motiv Application split
+
+`motiv-agent`ni eski `agents` Application'dan downtime'siz ajratish tartibi
+`MOTIV_SPLIT.md`da yozilgan. Eski Application auto-prune yoqilgan holda chartdan
+Motiv resurslarini olib tashlab, yangi Application'ni keyin yaratish taqiqlanadi:
+Deployment, Service va HTTPRoute vaqtincha o'chib ketadi.
 
 ## Multi-source cutover va rollback
 
@@ -45,8 +56,10 @@ Helm o'rnatilgan bo'lsa:
 ```bash
 helm lint charts/venu
 helm lint charts/agents -f ../agent/helm/values.yaml
+helm lint charts/motiv-agent -f ../chatbot/helm/values.yaml
 helm template venu charts/venu -f ../backend/helm/values.yaml >/dev/null
 helm template agents charts/agents -f ../agent/helm/values.yaml >/dev/null
+helm template motiv-agent charts/motiv-agent -f ../chatbot/helm/values.yaml >/dev/null
 ```
 
 Chart repo public, chunki unda secret qiymatlari yo'q; private backend va chatbot values repolari

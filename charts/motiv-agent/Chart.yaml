@@ -1,0 +1,6 @@
+apiVersion: v2
+name: motiv-agent
+description: Standalone Motiv Telegram and Instagram Google Sheets Q&A chatbot
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

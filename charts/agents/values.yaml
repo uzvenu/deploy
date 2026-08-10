@@ -1,7 +1,3 @@
 image:
   repository: registry.iprogrammer.uz/venu/agent
   tag: "d05493d"
-
-motivImage:
-  repository: registry.iprogrammer.uz/venu/aichat
-  tag: "f5d49ba"
