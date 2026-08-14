@@ -34,7 +34,7 @@ spec:
           # bu deployment'da esa SERVER_AUTH_TOKEN yo'q — ya'ni internetga
           # autentifikatsiyasiz LLM endpoint chiqib ketardi. Instagram/WhatsApp
           # webhook'lari va /healthz baribir shu portda ishlaydi.
-          args: ["-mode", "telegram,instagram,whatsapp"]
+          args: ["-mode", {{ ternary "telegram,instagram,whatsapp,seller" "telegram,instagram,whatsapp" .Values.sellerAgent.enabled | quote }}]
           ports:
             - name: http
               containerPort: 8090

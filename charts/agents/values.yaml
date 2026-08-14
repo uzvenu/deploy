@@ -1,3 +1,11 @@
 image:
   repository: registry.iprogrammer.uz/venu/agent
   tag: "d05493d"
+
+sellerAgent:
+  # Control API token va kamida bitta account tayyor bo'lgach true qiling.
+  enabled: false
+
+partnerReminders:
+  # Required Secrets yaratilgach application values'da true qiling.
+  enabled: false
