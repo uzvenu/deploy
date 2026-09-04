@@ -40,6 +40,10 @@ spec:
           envFrom:
             - secretRef:
                 name: venu-env
+            {{- with .Values.api.virtualTryOnSecretName }}
+            - secretRef:
+                name: {{ . | quote }}
+            {{- end }}
           env:
             - name: APP_AI_ENABLED
               value: "true"

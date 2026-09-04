@@ -1,3 +1,7 @@
 image:
   repository: registry.iprogrammer.uz/venu/backend
   tag: bootstrap
+
+api:
+  # Optional out-of-band Secret containing API-only environment variables.
+  virtualTryOnSecretName: ""
