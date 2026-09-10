@@ -1,3 +1,4 @@
+{{- if and .Values.enabled .Values.route.enabled .Values.legacyAgent.enabled }}
 # lattaputta.iprogrammer.uz — Lattaputta chatboti (sayt widgeti + Meta webhook'lari).
 # Xost nginx TLS'ni yopadi va default/main-gateway ga uzatadi.
 #
@@ -7,17 +8,17 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: lattaputta-agent
+  name: {{ .Values.route.name }}
   labels:
-    app.kubernetes.io/part-of: agents
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
 spec:
   hostnames:
-    - lattaputta.iprogrammer.uz
+    - {{ .Values.route.hostname }}
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: main-gateway
-      namespace: default
+      name: {{ .Values.route.gatewayName }}
+      namespace: {{ .Values.route.gatewayNamespace }}
   rules:
     - matches:
         - path:
@@ -26,6 +27,7 @@ spec:
       backendRefs:
         - group: ""
           kind: Service
-          name: lattaputta-agent
+          name: {{ .Values.legacyAgent.name }}
           port: 8080
           weight: 1
+{{- end }}

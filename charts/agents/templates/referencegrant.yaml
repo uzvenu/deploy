@@ -1,3 +1,4 @@
+{{- if and .Values.enabled .Values.referenceGrant.enabled .Values.modernAgent.enabled }}
 # venu ns'dagi venu-api HTTPRoute'i /ai/* ni shu ns'dagi venu-agent servisiga
 # yuboradi. Gateway API'da namespace'lararo backendRef DEFAULT bo'yicha taqiqlangan
 # (aks holda boshqa ns o'z trafigini bu yerga tortib olardi) — ruxsat shu grant
@@ -5,14 +6,16 @@
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant
 metadata:
-  name: venu-httproute-to-agents
+  name: {{ .Values.referenceGrant.name }}
   labels:
-    app.kubernetes.io/part-of: agents
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
 spec:
   from:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
-      namespace: venu
+      namespace: {{ .Values.referenceGrant.fromNamespace }}
   to:
     - group: ""
       kind: Service
+      name: {{ .Values.modernAgent.name }}
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if and .Values.enabled .Values.legacyAgent.enabled }}
 # Lattaputta do'koni uchun AI chatbot.
 #
 # Image venu-agent bilan BIR XIL — farq config'da: CATALOG_PROVIDER=legacy
@@ -8,25 +9,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lattaputta-agent
+  name: {{ .Values.legacyAgent.name }}
   labels:
-    app.kubernetes.io/name: lattaputta-agent
-    app.kubernetes.io/part-of: agents
+    app.kubernetes.io/name: {{ .Values.legacyAgent.name }}
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: lattaputta-agent
+      app.kubernetes.io/name: {{ .Values.legacyAgent.name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: lattaputta-agent
-        app.kubernetes.io/part-of: agents
+        app.kubernetes.io/name: {{ .Values.legacyAgent.name }}
+        app.kubernetes.io/part-of: {{ .Values.partOf }}
     spec:
       imagePullSecrets:
-        - name: venu-registry
+        - name: {{ .Values.registrySecretName }}
       containers:
         - name: agent
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -44,12 +45,12 @@ spec:
             # Xato ogohlantirishlari: WARN va undan yuqori loglar shu Telegram
             # chatiga ketadi. Sir emas — chat ID, shuning uchun manifestda.
             - name: ALERT_CHAT_ID
-              value: "1769851684"
+              value: {{ .Values.legacyAgent.alertChatID | quote }}
             - name: ALERT_SOURCE
-              value: "Lattaputta"
+              value: {{ .Values.legacyAgent.alertSource | quote }}
           envFrom:
             - secretRef:
-                name: lattaputta-agent-env
+                name: {{ .Values.legacyAgent.secretName }}
           volumeMounts:
             - name: google-creds
               mountPath: /secrets/google
@@ -87,20 +88,21 @@ spec:
       volumes:
         - name: google-creds
           secret:
-            secretName: google-creds
+            secretName: {{ .Values.googleCredentialsSecretName }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: lattaputta-agent
+  name: {{ .Values.legacyAgent.name }}
   labels:
-    app.kubernetes.io/name: lattaputta-agent
-    app.kubernetes.io/part-of: agents
+    app.kubernetes.io/name: {{ .Values.legacyAgent.name }}
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: lattaputta-agent
+    app.kubernetes.io/name: {{ .Values.legacyAgent.name }}
   ports:
     - name: http
       port: 8080
       targetPort: http
+{{- end }}

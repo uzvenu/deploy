@@ -1,0 +1,53 @@
+# DESIGN EXAMPLE ONLY. No Argo CD Application references this file.
+# Venu is a future new stack: do not enable this file or copy Latta Putta data,
+# Secrets, routes or external integration credentials into it.
+enabled: false
+
+partOf: venu
+
+image:
+  repository: registry.iprogrammer.uz/venu/backend
+  # Fail-safe immutable SHA sentinel; replace through an explicit promotion.
+  tag: "0000000"
+
+registrySecretName: venu-registry
+
+api:
+  name: venu-api
+  secretName: venu-env
+  jwtSecretName: venu-jwt
+  storageClaimName: ""
+  virtualTryOnSecretName: ""
+  agentBaseURL: http://venu-agent.venu-agent.svc.cluster.local:8080
+
+worker:
+  name: venu-worker
+
+migration:
+  name: venu-migrate
+
+postgres:
+  name: venu-postgres
+  serviceName: venu-postgres
+  secretName: venu-postgres
+  dataClaimName: venu-postgres-data
+  storageClassName: local-path
+  storageSize: 10Gi
+
+backup:
+  name: venu-postgres-backup
+  claimName: venu-postgres-backups
+  storageClassName: local-path
+  storageSize: 10Gi
+  schedule: "0 22 * * *"
+  filePrefix: venu
+  retentionDays: 7
+
+route:
+  name: venu-api
+  # Reserved non-routable placeholder; final domain requires operator approval.
+  hostname: api.venu.example.invalid
+  gatewayName: main-gateway
+  gatewayNamespace: default
+  agentServiceName: venu-agent
+  agentNamespace: venu-agent

@@ -1,0 +1,63 @@
+# DESIGN EXAMPLE ONLY. No Argo CD Application references this file.
+# This describes a future isolated modern Latta Putta agent release. It does not
+# decide the fate of the existing legacy lattaputta-agent workload.
+enabled: false
+
+partOf: lattaputta-agent
+registrySecretName: lattaputta-registry
+googleCredentialsSecretName: lattaputta-google-creds
+
+image:
+  repository: registry.iprogrammer.uz/venu/agent
+  tag: "0000000"
+
+modernAgent:
+  enabled: true
+  name: lattaputta-agent
+  secretName: lattaputta-agent-env
+  alertChatID: ""
+  alertSource: Latta Putta
+
+legacyAgent:
+  enabled: false
+  name: lattaputta-legacy-agent
+  secretName: lattaputta-legacy-agent-env
+  alertChatID: ""
+  alertSource: Latta Putta legacy
+
+sellerAgent:
+  enabled: false
+
+outreach:
+  enabled: false
+  name: lattaputta-outreach
+  secretName: lattaputta-outreach-env
+
+partnerReminders:
+  enabled: false
+  name: lattaputta-partner-reminders
+  secretName: lattaputta-partner-reminder-env
+
+postgres:
+  enabled: true
+  name: lattaputta-agent-postgres
+  serviceName: lattaputta-agent-postgres
+  secretName: lattaputta-agent-postgres
+  dataClaimName: lattaputta-agent-postgres-data
+  initConfigMapName: lattaputta-agent-postgres-init
+  storageClassName: local-path
+  storageSize: 10Gi
+  databases:
+    - lattaputta
+
+route:
+  enabled: false
+  name: lattaputta-agent
+  hostname: agent.lattaputta.example.invalid
+  gatewayName: main-gateway
+  gatewayNamespace: default
+
+referenceGrant:
+  enabled: true
+  name: lattaputta-api-to-agent
+  fromNamespace: lattaputta

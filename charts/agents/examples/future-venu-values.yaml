@@ -1,0 +1,63 @@
+# DESIGN EXAMPLE ONLY. No Argo CD Application references this file.
+# Venu is a future new stack and must receive new Secrets, database contents,
+# bot identities and external integration credentials.
+enabled: false
+
+partOf: venu-agent
+registrySecretName: venu-registry
+googleCredentialsSecretName: venu-google-creds
+
+image:
+  repository: registry.iprogrammer.uz/venu/agent
+  tag: "0000000"
+
+modernAgent:
+  enabled: true
+  name: venu-agent
+  secretName: venu-agent-env
+  alertChatID: ""
+  alertSource: Venu
+
+legacyAgent:
+  enabled: false
+  name: venu-legacy-agent
+  secretName: venu-legacy-agent-env
+  alertChatID: ""
+  alertSource: Venu legacy
+
+sellerAgent:
+  enabled: false
+
+outreach:
+  enabled: false
+  name: venu-outreach
+  secretName: venu-outreach-env
+
+partnerReminders:
+  enabled: false
+  name: venu-partner-reminders
+  secretName: venu-partner-reminder-env
+
+postgres:
+  enabled: true
+  name: venu-agent-postgres
+  serviceName: venu-agent-postgres
+  secretName: venu-agent-postgres
+  dataClaimName: venu-agent-postgres-data
+  initConfigMapName: venu-agent-postgres-init
+  storageClassName: local-path
+  storageSize: 10Gi
+  databases:
+    - venu
+
+route:
+  enabled: false
+  name: venu-agent
+  hostname: agent.venu.example.invalid
+  gatewayName: main-gateway
+  gatewayNamespace: default
+
+referenceGrant:
+  enabled: true
+  name: venu-api-to-agent
+  fromNamespace: venu
