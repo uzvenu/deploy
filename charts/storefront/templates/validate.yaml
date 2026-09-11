@@ -1,0 +1,12 @@
+{{- /*
+Renders nothing. Fails the render when a value that identifies a brand is
+missing. See charts/marketplace/templates/validate.yaml for the reasoning.
+*/ -}}
+{{- if .Values.enabled -}}
+{{- $_ := required "partOf is required: it labels every resource with the brand that owns it" .Values.partOf -}}
+{{- $_ := required "registrySecretName is required: the image pull Secret in this brand's own namespace" .Values.registrySecretName -}}
+{{- $_ := required "secretName is required: the Secret holding BRAND_*, NEXTAUTH_* and BACKEND_URL for this brand" .Values.secretName -}}
+{{- if .Values.route.enabled -}}
+{{- $_ := required "route.hostname is required: without it a brand would publish on whatever host the chart defaulted to" .Values.route.hostname -}}
+{{- end -}}
+{{- end -}}

@@ -1,0 +1,38 @@
+{{- /*
+Renders nothing. Fails the render when a value that identifies a brand is
+missing. See charts/marketplace/templates/validate.yaml for the reasoning; the
+one that does real damage here is legacyAgent.alertChatID, which used to default
+to a live Telegram chat.
+*/ -}}
+{{- if .Values.enabled -}}
+{{- $_ := required "partOf is required: it labels every resource with the brand that owns it" .Values.partOf -}}
+
+{{- if or .Values.modernAgent.enabled .Values.legacyAgent.enabled .Values.outreach.enabled .Values.partnerReminders.enabled -}}
+{{- $_ := required "registrySecretName is required: the image pull Secret in this brand's own namespace" .Values.registrySecretName -}}
+{{- end -}}
+
+{{- if .Values.modernAgent.enabled -}}
+{{- $_ := required "modernAgent.secretName is required: this agent's own environment Secret" .Values.modernAgent.secretName -}}
+{{- end -}}
+{{- if .Values.legacyAgent.enabled -}}
+{{- $_ := required "legacyAgent.secretName is required: this agent's own environment Secret" .Values.legacyAgent.secretName -}}
+{{- end -}}
+{{- if .Values.outreach.enabled -}}
+{{- $_ := required "outreach.secretName is required: this worker's own environment Secret" .Values.outreach.secretName -}}
+{{- end -}}
+{{- if .Values.partnerReminders.enabled -}}
+{{- $_ := required "partnerReminders.secretName is required: this worker's own environment Secret" .Values.partnerReminders.secretName -}}
+{{- end -}}
+
+{{- if .Values.postgres.enabled -}}
+{{- $_ := required "postgres.secretName is required: this brand's own database credentials" .Values.postgres.secretName -}}
+{{- end -}}
+
+{{- if .Values.route.enabled -}}
+{{- $_ := required "route.hostname is required: without it a brand would publish on whatever host the chart defaulted to" .Values.route.hostname -}}
+{{- end -}}
+
+{{- if .Values.networkPolicy.enabled -}}
+{{- $_ := required "networkPolicy.apiNamespace is required: the namespace whose API may reach this agent" .Values.networkPolicy.apiNamespace -}}
+{{- end -}}
+{{- end -}}

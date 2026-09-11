@@ -1,14 +1,28 @@
+# Defaults for the shared storefront chart.
+#
+# Same rule as charts/marketplace: a default is only allowed when it is the same
+# for every brand. The brand's Secret name, hostname and label have no default
+# and are declared in templates/validate.yaml, so a brand that forgets one fails
+# the render rather than inheriting another brand's.
+
+# Off by default: a storefront only exists because a brand's values turned it on.
 enabled: false
-partOf: storefront
+
+# --- required per brand, no defaults -----------------------------------------
+#
+# partOf              the brand that owns every resource
+# registrySecretName  image pull Secret in this brand's namespace
+# secretName          the Secret holding BRAND_*, NEXTAUTH_* and BACKEND_URL
+# route.hostname      the public storefront hostname, when route.enabled
+
 name: storefront
 replicas: 1
 
+# Same image for every brand; the brand is chosen at runtime by BRAND_ID in
+# secretName. CD overwrites the tag with the commit SHA.
 image:
   repository: registry.iprogrammer.uz/venu/frontend
   tag: bootstrap
-
-registrySecretName: registry
-secretName: storefront-env
 
 service:
   port: 3000
@@ -16,7 +30,7 @@ service:
 route:
   enabled: true
   name: storefront
-  hostname: storefront.example.invalid
+  # The cluster's shared gateway: the same one for every brand.
   gatewayName: main-gateway
   gatewayNamespace: default
 

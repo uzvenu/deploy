@@ -1,66 +1,83 @@
-# Keep true for the current production release. A future environment must use
-# a separate values file and Argo CD Application before enabling this chart.
+# Defaults for the shared agent chart.
+#
+# Same rule as charts/marketplace: a default is only allowed when it is the same
+# for every brand. Anything that identifies one brand has no default and is
+# declared in templates/validate.yaml, so a brand that forgets it fails the
+# render instead of quietly inheriting somebody else's.
+#
+# This chart used to default to Latta Putta's production — down to its Telegram
+# alert chat id, which meant a brand that enabled the legacy agent without
+# setting alertChatID would have started sending its alerts into Latta Putta's
+# chat.
+#
+# Note this chart is not yet brand-neutral in shape: its templates are still
+# named per brand (lattaputta-agent.yaml, venu-agent.yaml, ...) rather than
+# rendered once from values. Folding them together is separate work; the two
+# agents share an image but genuinely differ in modes, auth and probes.
+
 enabled: true
 
-partOf: agents
-registrySecretName: venu-registry
-googleCredentialsSecretName: google-creds
+# --- required per brand, no defaults -----------------------------------------
+#
+# partOf                 the brand that owns every resource
+# registrySecretName     image pull Secret in this brand's namespace
+# <agent>.secretName     the enabled agent's environment Secret
+# postgres.secretName    this brand's own database credentials
+# route.hostname         the public agent hostname, when route.enabled
+# networkPolicy.apiNamespace  the namespace whose API may reach this agent
 
+# Optional: a Secret holding a Google service account key, mounted when set.
+googleCredentialsSecretName: ""
+
+# Same image for every brand. CD overwrites the tag with the commit SHA.
 image:
   repository: registry.iprogrammer.uz/venu/agent
-  tag: "d05493d"
+  tag: bootstrap
 
+# The agent talking to the current Go backend.
 modernAgent:
-  enabled: true
-  name: venu-agent
-  secretName: venu-agent-env
-  modes: http,telegram
+  enabled: false
+  name: agent
+  modes: http
   alertChatID: ""
-  alertSource: Venu
+  alertSource: ""
 
+# The agent talking to the legacy 6Valley API. A brand with no legacy system
+# leaves this off.
 legacyAgent:
-  enabled: true
-  name: lattaputta-agent
-  secretName: lattaputta-agent-env
-  alertChatID: "1769851684"
-  alertSource: Lattaputta
+  enabled: false
+  name: legacy-agent
+  alertChatID: ""
+  alertSource: ""
 
 sellerAgent:
-  # Control API token va kamida bitta account tayyor bo'lgach true qiling.
+  # Needs a control API token and at least one account before it can run.
   enabled: false
 
 outreach:
-  enabled: true
-  name: lattaputta-outreach
-  secretName: lattaputta-outreach-env
+  enabled: false
+  name: outreach
 
 partnerReminders:
-  # Required Secrets yaratilgach application values'da true qiling.
   enabled: false
-  name: lattaputta-partner-reminders
-  secretName: lattaputta-partner-reminder-env
+  name: partner-reminders
 
 postgres:
   enabled: true
   name: postgres
   serviceName: postgres
-  secretName: agents-postgres
   dataClaimName: postgres-data
   initConfigMapName: postgres-init
   storageClassName: local-path
   storageSize: 10Gi
-  databases:
-    - venu
-    - lattaputta
-    - motiv
+  # One database per agent that needs one.
+  databases: []
 
 route:
-  enabled: true
-  name: lattaputta-agent
-  hostname: lattaputta.iprogrammer.uz
+  enabled: false
+  name: agent
   gatewayName: main-gateway
   gatewayNamespace: default
 
 networkPolicy:
   enabled: true
-  apiNamespace: venu
