@@ -19,8 +19,8 @@ Do not copy database/PVC contents, JWT keys, internal service tokens, storage cr
 
 ## Shared charts
 
-- `charts/venu`: API, worker, migration, PostgreSQL, storage PVC, backup and API route.
-- `charts/agents`: agent, agent PostgreSQL and cross-namespace `ReferenceGrant`.
+- `charts/marketplace`: API, worker, migration, PostgreSQL, storage PVC, backup and API route.
+- `charts/agent`: agent, agent PostgreSQL and cross-namespace `ReferenceGrant`.
 - `charts/storefront`: branded Next.js storefront and public route.
 
 The application repositories own immutable image tags. Their CD workflows update every `helm/*values.yaml` file, so all brand instances promote the same validated code while retaining independent runtime configuration.
@@ -31,10 +31,14 @@ Every backend instance keeps its in-namespace API Service named `venu-api`. Next
 
 Assume the brand slug is `acme`.
 
-1. Add `backend/helm/acme-values.yaml`, based on `helm/venu-market-values.yaml`.
-2. Add `agent/helm/acme-values.yaml`, based on `helm/venu-market-values.yaml`.
-3. Add `frontend/helm/acme-values.yaml`, based on `helm/venu-market-values.yaml`.
-4. Add three Argo Applications under `argocd/`, targeting namespaces `acme` and `acme-agent`, then add matching entries to the root backend values `brandApplications.items`. The root Argo Application creates the children automatically; no workload `kubectl apply` is used.
+1. Add `backend/helm/acme-values.yaml`, based on `helm/venu-values.yaml`. Keep the
+   `-values.yaml` suffix: CD bumps the image tag with `for values in helm/*values.yaml`,
+   and a name outside that glob leaves the brand pinned to an old image with nothing failing.
+2. Add `agent/helm/acme-values.yaml`, based on `helm/venu-values.yaml`.
+3. Add `frontend/helm/acme-values.yaml`, based on `helm/venu-values.yaml`.
+4. Add matching entries to `backend/helm/lattaputta-values.yaml`'s `brandApplications.items`.
+   The root Application creates the child Applications; do **not** also add files under
+   `argocd/` for them, or a hand-applied copy will fight Argo for ownership.
 5. Create the namespaces and out-of-band Secrets before enabling the root bootstrap entries.
 6. Use a fresh PostgreSQL password, JWT keypair, NextAuth secret, storage signing key and backend-agent service token.
 7. Keep `APP_AUTH_CUSTOMER_OTP_ENABLED=false` and `worker.enabled=false` until the brand has its own Eskiz credentials and moderated SMS templates. Never borrow another brand's provider credentials.
@@ -53,6 +57,26 @@ Assume the brand slug is `acme`.
 13. Verify readiness, health endpoints and an empty/fresh database before changing DNS or the external load balancer.
 
 Unknown frontend `BRAND_ID` values are supported without TypeScript changes when `BRAND_NAME`, `SITE_URL`, `BRAND_LOGO_PATH` and `BRAND_PRIMARY_COLOR` are supplied. Logo paths may be root-relative bundled assets or absolute HTTPS URLs; custom brands do not inherit another brand's contacts, links or images. Palette changes require only a Secret update and controlled storefront restart.
+
+## Naming
+
+A chart is shared, so it carries no brand name. A brand names its own things.
+
+| Layer | Rule | Example |
+|---|---|---|
+| Chart | brand-neutral | `marketplace`, `storefront`, `agent` |
+| Values file | `helm/<brand>-values.yaml` | `helm/venu-values.yaml` |
+| Namespace | the brand | `acme`, `acme-agent` |
+| Resources inside it | no brand prefix | `api`, `worker`, `storefront`, `postgres` |
+
+Two names break this rule today and are left alone on purpose: the `venu`
+namespace runs Latta Putta, and `venu-market` runs Venu. Renaming a namespace
+means moving a production database, so it is separate work.
+
+The `venu-api` Service name is also fixed for now: `frontend`'s CD bakes
+`BACKEND_URL=http://venu-api:8080` into the image at build time, so every brand
+namespace must have a Service under that name until the build argument is
+neutralised.
 
 ## Venu production instance
 
