@@ -1,5 +1,18 @@
-# Keep true for the current production release. Future example values remain
-# false until an operator intentionally creates a separate Argo CD Application.
+# Defaults for the shared marketplace chart.
+#
+# The rule this file follows: a default is only allowed when it is the same for
+# every brand. Anything that identifies one brand — its namespace's Secrets, its
+# hostname, its label — has no default at all and is declared in
+# templates/validate.yaml, so a brand that forgets it fails the render.
+#
+# It used to be the other way round: these defaults were Latta Putta's
+# production configuration. That made Latta Putta's own values file look almost
+# empty, hid half of its configuration inside this chart, and meant a new brand
+# that omitted a key silently inherited Latta Putta's — with route.hostname the
+# new brand would have published on Latta Putta's host and nothing would have
+# complained.
+
+# Whether this release deploys anything at all.
 enabled: true
 
 # Optional app-of-apps bootstrap. A platform/root instance can declaratively
@@ -8,60 +21,78 @@ brandApplications:
   enabled: false
   items: []
 
-partOf: venu
+# --- required per brand, no defaults -----------------------------------------
+#
+# Listed here so the shape is discoverable; the values themselves belong to the
+# brand. See templates/validate.yaml for what each one must be.
+#
+# partOf:              the brand that owns every resource, e.g. "lattaputta"
+# registrySecretName:  image pull Secret in this brand's namespace
+# api.secretName:      APP_* environment Secret
+# api.jwtSecretName:   RS256 keypair Secret
+# api.agentBaseURL:    this brand's agent, fully qualified across namespaces
+# postgres.secretName: POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+# route.hostname:      the public API hostname
 
+# Same image for every brand: one build, many deployments. CD overwrites the tag
+# with the immutable commit SHA it just pushed.
 image:
   repository: registry.iprogrammer.uz/venu/backend
   tag: bootstrap
 
-registrySecretName: venu-registry
-
 api:
   enabled: true
+  # Not brand-named despite appearances, and not safe to change per brand: the
+  # storefront's CD bakes BACKEND_URL=http://venu-api:8080 into the shared image
+  # at build time, so every brand namespace must answer on this name.
   name: venu-api
-  secretName: venu-env
-  jwtSecretName: venu-jwt
+  # Empty mounts an emptyDir instead of a PVC. Set together with storage.enabled.
   storageClaimName: ""
   # Optional out-of-band Secret containing API-only environment variables.
   virtualTryOnSecretName: ""
-  agentBaseURL: http://venu-agent.agent.svc.cluster.local:8080
 
 storage:
+  # Enable together with api.enabled. local-path binds a claim only on first
+  # mount, so a claim with no consumer sits Pending and holds the Argo
+  # Application in Progressing.
   enabled: false
-  claimName: venu-storage
+  claimName: storage-data
   storageClassName: local-path
   storageSize: 10Gi
 
 worker:
   enabled: true
-  name: venu-worker
+  name: worker
 
 migration:
   enabled: true
-  name: venu-migrate
+  name: migrate
 
 postgres:
   enabled: true
   name: postgres
   serviceName: postgres
-  secretName: venu-postgres
   dataClaimName: postgres-data
   storageClassName: local-path
   storageSize: 10Gi
 
 backup:
+  # Enable together with api.enabled, for the same Pending-claim reason as
+  # storage above.
   enabled: true
   name: postgres-backup
   claimName: postgres-backups
   storageClassName: local-path
   storageSize: 10Gi
+  # 22:00 UTC = 03:00 Asia/Tashkent.
   schedule: "0 22 * * *"
-  filePrefix: venu
+  # Prefixes the dump filenames inside this brand's own backup PVC.
+  filePrefix: db
   retentionDays: 7
 
 route:
   enabled: true
-  name: venu-api
-  hostname: venu-api.iprogrammer.uz
+  name: api
+  # The cluster's shared gateway: the same one for every brand.
   gatewayName: main-gateway
   gatewayNamespace: default

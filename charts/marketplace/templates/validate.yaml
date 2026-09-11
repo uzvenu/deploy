@@ -1,0 +1,33 @@
+{{- /*
+Renders nothing. Fails the render when a value that identifies a brand is missing.
+
+These values deliberately have no defaults in values.yaml. A default for any of
+them is one brand's production configuration, and a brand that forgets the key
+would inherit it in silence — route.hostname being the one that does real
+damage, because the new brand would claim another brand's hostname on the shared
+gateway and no part of the system would report a problem.
+
+Each check is behind the same toggle as the resource that uses the value, so a
+brand that runs no API is not asked for an API Secret.
+*/ -}}
+{{- if .Values.enabled -}}
+{{- $_ := required "partOf is required: it labels every resource with the brand that owns it, e.g. partOf: lattaputta" .Values.partOf -}}
+
+{{- if or .Values.api.enabled .Values.worker.enabled .Values.migration.enabled -}}
+{{- $_ := required "registrySecretName is required: the image pull Secret in this brand's own namespace" .Values.registrySecretName -}}
+{{- $_ := required "api.secretName is required: the Secret holding this brand's APP_* environment" .Values.api.secretName -}}
+{{- end -}}
+
+{{- if .Values.api.enabled -}}
+{{- $_ := required "api.jwtSecretName is required: this brand's own RS256 keypair, never another brand's" .Values.api.jwtSecretName -}}
+{{- $_ := required "api.agentBaseURL is required: this brand's agent, fully qualified because it lives in another namespace" .Values.api.agentBaseURL -}}
+{{- end -}}
+
+{{- if or .Values.postgres.enabled .Values.backup.enabled -}}
+{{- $_ := required "postgres.secretName is required: POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB for this brand's own database" .Values.postgres.secretName -}}
+{{- end -}}
+
+{{- if .Values.route.enabled -}}
+{{- $_ := required "route.hostname is required: without it a brand would publish on whatever host the chart defaulted to, taking over another brand's traffic" .Values.route.hostname -}}
+{{- end -}}
+{{- end -}}
