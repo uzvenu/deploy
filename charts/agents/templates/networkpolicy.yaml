@@ -1,0 +1,45 @@
+{{- if and .Values.enabled .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.postgres.name }}-ingress
+  labels:
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.postgres.name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: {{ .Values.partOf }}
+      ports:
+        - protocol: TCP
+          port: 5432
+{{- if .Values.modernAgent.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.modernAgent.name }}-ingress
+  labels:
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.modernAgent.name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.apiNamespace }}
+      ports:
+        - protocol: TCP
+          port: 8090
+{{- end }}
+{{- end }}

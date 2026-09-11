@@ -1,6 +1,6 @@
 apiVersion: v2
 name: venu
-description: Venu API, worker, PostgreSQL, backup and HTTP routing
+description: Reusable marketplace API, worker, PostgreSQL, storage, backup and routing
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

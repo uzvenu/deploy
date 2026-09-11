@@ -31,16 +31,20 @@ spec:
       containers:
         - name: agent
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          args: ["-mode", "http,telegram"]
+          args: ["-mode", {{ .Values.modernAgent.modes | quote }}]
           ports:
             - name: http
               containerPort: 8090
           env:
+            - name: SERVER_REQUIRE_AUTH
+              value: "true"
+            {{- if .Values.googleCredentialsSecretName }}
             # Bilim bazasi Google Sheets'dan keladi; qaysi jadval/tab ekani
             # secret'da (KB_SHEET_ID + KB_SHEET_RANGE). Faqat KB — guruh/sotuvchi
             # tab'lari boshqa do'konniki, shuning uchun GOOGLE_SHEET_ID berilmaydi.
             - name: GOOGLE_CREDENTIALS_FILE
               value: /secrets/google/creds.json
+            {{- end }}
             # Xato ogohlantirishlari: WARN va undan yuqori loglar shu Telegram
             # chatiga ketadi. Sir emas — chat ID, shuning uchun manifestda.
             - name: ALERT_CHAT_ID
@@ -50,10 +54,12 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ .Values.modernAgent.secretName }}
+          {{- if .Values.googleCredentialsSecretName }}
           volumeMounts:
             - name: google-creds
               mountPath: /secrets/google
               readOnly: true
+          {{- end }}
           # startupProbe: boot'da butun katalog indekslanadi (eski backendda ~9000
           # mahsulot, sahifasiga 50 tadan) va HTTP server shundan KEYIN ko'tariladi.
           # Usiz liveness podni indeks qurilib bo'lguncha o'ldirib, restart siklini
@@ -87,10 +93,12 @@ spec:
             limits:
               cpu: "1"
               memory: 2Gi
+      {{- if .Values.googleCredentialsSecretName }}
       volumes:
         - name: google-creds
           secret:
             secretName: {{ .Values.googleCredentialsSecretName }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

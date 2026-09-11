@@ -1,0 +1,22 @@
+{{- if .Values.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.postgres.name }}-ingress
+  labels:
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.postgres.name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: {{ .Values.partOf }}
+      ports:
+        - protocol: TCP
+          port: 5432
+{{- end }}

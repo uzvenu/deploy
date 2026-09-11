@@ -1,4 +1,4 @@
-{{- if .Values.enabled }}
+{{- if and .Values.enabled .Values.worker.enabled }}
 # Venu worker — background jobs (cmd/worker). Same image as the API, runs the
 # worker binary instead. Separate Deployment so it scales independently and a
 # slow job never starves an HTTP request. No HTTP port, no JWT keys needed.

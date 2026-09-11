@@ -1,4 +1,4 @@
-{{- if .Values.enabled }}
+{{- if and .Values.enabled .Values.backup.enabled }}
 # Nightly logical backup of the Venu Postgres.
 #
 # pg_dump -Fc (custom format) into its own PVC, one file per day, 7 days kept.
@@ -11,6 +11,8 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ .Values.backup.claimName }}
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
   labels:
     app.kubernetes.io/name: {{ .Values.backup.name }}
     app.kubernetes.io/part-of: {{ .Values.partOf }}
@@ -65,12 +67,22 @@ spec:
                   echo "dumping to $out"
                   pg_dump -h {{ .Values.postgres.serviceName }} -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$out"
                   echo "dump done: $(du -h "$out" | cut -f1)"
-                  # Simple rotation: anything older than 7 days goes.
+{{- if .Values.storage.enabled }}
+                  media="/backups/{{ .Values.backup.filePrefix }}-media-$(date +%Y-%m-%d).tar.gz"
+                  tar -czf "$media" -C /storage .
+                  echo "media backup done: $(du -h "$media" | cut -f1)"
+{{- end }}
                   find /backups -name '{{ .Values.backup.filePrefix }}-*.dump' -mtime +{{ .Values.backup.retentionDays }} -delete
+                  find /backups -name '{{ .Values.backup.filePrefix }}-media-*.tar.gz' -mtime +{{ .Values.backup.retentionDays }} -delete
                   echo "kept:"; ls -lh /backups
               volumeMounts:
                 - name: backups
                   mountPath: /backups
+{{- if .Values.storage.enabled }}
+                - name: storage
+                  mountPath: /storage
+                  readOnly: true
+{{- end }}
               resources:
                 requests:
                   cpu: 50m
@@ -82,4 +94,9 @@ spec:
             - name: backups
               persistentVolumeClaim:
                 claimName: {{ .Values.backup.claimName }}
+{{- if .Values.storage.enabled }}
+            - name: storage
+              persistentVolumeClaim:
+                claimName: {{ .Values.storage.claimName }}
+{{- end }}
 {{- end }}

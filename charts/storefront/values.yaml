@@ -1,0 +1,29 @@
+enabled: false
+partOf: storefront
+name: storefront
+replicas: 1
+
+image:
+  repository: registry.iprogrammer.uz/venu/frontend
+  tag: bootstrap
+
+registrySecretName: registry
+secretName: storefront-env
+
+service:
+  port: 3000
+
+route:
+  enabled: true
+  name: storefront
+  hostname: storefront.example.invalid
+  gatewayName: main-gateway
+  gatewayNamespace: default
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi

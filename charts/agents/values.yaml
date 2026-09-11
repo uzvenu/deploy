@@ -14,7 +14,8 @@ modernAgent:
   enabled: true
   name: venu-agent
   secretName: venu-agent-env
-  alertChatID: "1769851684"
+  modes: http,telegram
+  alertChatID: ""
   alertSource: Venu
 
 legacyAgent:
@@ -60,7 +61,6 @@ route:
   gatewayName: main-gateway
   gatewayNamespace: default
 
-referenceGrant:
+networkPolicy:
   enabled: true
-  name: venu-httproute-to-agents
-  fromNamespace: venu
+  apiNamespace: venu

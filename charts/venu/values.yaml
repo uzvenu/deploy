@@ -11,6 +11,7 @@ image:
 registrySecretName: venu-registry
 
 api:
+  enabled: true
   name: venu-api
   secretName: venu-env
   jwtSecretName: venu-jwt
@@ -19,13 +20,22 @@ api:
   virtualTryOnSecretName: ""
   agentBaseURL: http://venu-agent.agent.svc.cluster.local:8080
 
+storage:
+  enabled: false
+  claimName: venu-storage
+  storageClassName: local-path
+  storageSize: 10Gi
+
 worker:
+  enabled: true
   name: venu-worker
 
 migration:
+  enabled: true
   name: venu-migrate
 
 postgres:
+  enabled: true
   name: postgres
   serviceName: postgres
   secretName: venu-postgres
@@ -34,6 +44,7 @@ postgres:
   storageSize: 10Gi
 
 backup:
+  enabled: true
   name: postgres-backup
   claimName: postgres-backups
   storageClassName: local-path
@@ -43,9 +54,8 @@ backup:
   retentionDays: 7
 
 route:
+  enabled: true
   name: venu-api
   hostname: venu-api.iprogrammer.uz
   gatewayName: main-gateway
   gatewayNamespace: default
-  agentServiceName: venu-agent
-  agentNamespace: agent

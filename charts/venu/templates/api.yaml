@@ -1,4 +1,4 @@
-{{- if .Values.enabled }}
+{{- if and .Values.enabled .Values.api.enabled }}
 # Venu API — the HTTP server (cmd/api). Config comes entirely from the
 # venu-env secret (APP_* env); RS256 JWT keys are mounted read-only at
 # /app/keys (the default APP_JWT_*_KEY_PATH resolves under the /app workdir).
