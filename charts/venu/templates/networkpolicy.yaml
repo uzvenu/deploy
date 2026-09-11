@@ -3,6 +3,8 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ .Values.postgres.name }}-ingress
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
   labels:
     app.kubernetes.io/part-of: {{ .Values.partOf }}
 spec:
