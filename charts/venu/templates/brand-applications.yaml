@@ -1,0 +1,43 @@
+{{- if and .Values.enabled .Values.brandApplications.enabled }}
+{{- range .Values.brandApplications.items }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .name }}
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+  labels:
+    app.kubernetes.io/part-of: {{ .partOf }}
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/uzvenu/deploy.git
+      targetRevision: master
+      path: {{ .chartPath }}
+      helm:
+        releaseName: {{ .releaseName }}
+        valueFiles:
+          - $values/{{ .valuesFile }}
+    - repoURL: {{ .valuesRepoURL }}
+      targetRevision: {{ .valuesRevision }}
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .destinationNamespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        maxDuration: 3m
+        factor: 2
+---
+{{- end }}
+{{- end }}

@@ -12,6 +12,7 @@ A brand receives:
 - one agent values file in the agent repository;
 - one storefront values file in the frontend repository;
 - three Argo CD Applications that combine the shared charts with those values;
+- a root application's `brandApplications.items` entry that bootstraps those child Applications through GitOps;
 - out-of-band Secrets named only by the values files.
 
 Do not copy database/PVC contents, JWT keys, internal service tokens, storage credentials or Telegram bot identities between brands.
@@ -33,8 +34,8 @@ Assume the brand slug is `acme`.
 1. Add `backend/helm/acme-values.yaml`, based on `helm/venu-market-values.yaml`.
 2. Add `agent/helm/acme-values.yaml`, based on `helm/venu-market-values.yaml`.
 3. Add `frontend/helm/acme-values.yaml`, based on `helm/venu-market-values.yaml`.
-4. Add three Argo Applications under `argocd/`, targeting namespaces `acme` and `acme-agent`.
-5. Create the namespaces and out-of-band Secrets before enabling sync.
+4. Add three Argo Applications under `argocd/`, targeting namespaces `acme` and `acme-agent`, then add matching entries to the root backend values `brandApplications.items`. The root Argo Application creates the children automatically; no workload `kubectl apply` is used.
+5. Create the namespaces and out-of-band Secrets before enabling the root bootstrap entries.
 6. Use a fresh PostgreSQL password, JWT keypair, NextAuth secret, storage signing key and backend-agent service token.
 7. Keep `APP_AUTH_CUSTOMER_OTP_ENABLED=false` and `worker.enabled=false` until the brand has its own Eskiz credentials and moderated SMS templates. Never borrow another brand's provider credentials.
 8. Configure frontend runtime identity in its Secret:
@@ -47,7 +48,7 @@ Assume the brand slug is `acme`.
    - optional root-relative asset overrides such as `BRAND_LOGO_PATH=/brands/acme/logo.png`
 9. Configure backend identity with matching `APP_BRAND_*` values.
 10. Configure the agent with matching `BRAND_*`, `CATALOG_API_BASE`, `CATALOG_SITE_BASE` and a fresh `DATABASE_URL`.
-11. Run `helm lint` and `helm template` for all charts with real values, then push. Bootstrap only the Argo Application manifests; all workloads remain GitOps-managed.
+11. Run `helm lint` and `helm template` for all charts with real values, then push. The root app-of-apps bootstrap creates the child Applications and all workloads remain GitOps-managed.
 12. Verify readiness, health endpoints and an empty/fresh database before changing DNS or the external load balancer.
 
 Unknown frontend `BRAND_ID` values are supported without TypeScript changes when `BRAND_NAME`, `SITE_URL`, `BRAND_LOGO_PATH` and `BRAND_PRIMARY_COLOR` are supplied. Logo paths may be root-relative bundled assets or absolute HTTPS URLs; custom brands do not inherit another brand's contacts, links or images. Palette changes require only a Secret update and controlled storefront restart.

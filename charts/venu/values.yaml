@@ -2,6 +2,12 @@
 # false until an operator intentionally creates a separate Argo CD Application.
 enabled: true
 
+# Optional app-of-apps bootstrap. A platform/root instance can declaratively
+# create per-brand child Applications; brand instances leave this disabled.
+brandApplications:
+  enabled: false
+  items: []
+
 partOf: venu
 
 image:
