@@ -13,9 +13,7 @@ spec:
     - Ingress
   ingress:
     - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/part-of: {{ .Values.partOf }}
+        - podSelector: {}
       ports:
         - protocol: TCP
           port: 5432
