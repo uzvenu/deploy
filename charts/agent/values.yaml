@@ -1,0 +1,66 @@
+# Keep true for the current production release. A future environment must use
+# a separate values file and Argo CD Application before enabling this chart.
+enabled: true
+
+partOf: agents
+registrySecretName: venu-registry
+googleCredentialsSecretName: google-creds
+
+image:
+  repository: registry.iprogrammer.uz/venu/agent
+  tag: "d05493d"
+
+modernAgent:
+  enabled: true
+  name: venu-agent
+  secretName: venu-agent-env
+  modes: http,telegram
+  alertChatID: ""
+  alertSource: Venu
+
+legacyAgent:
+  enabled: true
+  name: lattaputta-agent
+  secretName: lattaputta-agent-env
+  alertChatID: "1769851684"
+  alertSource: Lattaputta
+
+sellerAgent:
+  # Control API token va kamida bitta account tayyor bo'lgach true qiling.
+  enabled: false
+
+outreach:
+  enabled: true
+  name: lattaputta-outreach
+  secretName: lattaputta-outreach-env
+
+partnerReminders:
+  # Required Secrets yaratilgach application values'da true qiling.
+  enabled: false
+  name: lattaputta-partner-reminders
+  secretName: lattaputta-partner-reminder-env
+
+postgres:
+  enabled: true
+  name: postgres
+  serviceName: postgres
+  secretName: agents-postgres
+  dataClaimName: postgres-data
+  initConfigMapName: postgres-init
+  storageClassName: local-path
+  storageSize: 10Gi
+  databases:
+    - venu
+    - lattaputta
+    - motiv
+
+route:
+  enabled: true
+  name: lattaputta-agent
+  hostname: lattaputta.iprogrammer.uz
+  gatewayName: main-gateway
+  gatewayNamespace: default
+
+networkPolicy:
+  enabled: true
+  apiNamespace: venu

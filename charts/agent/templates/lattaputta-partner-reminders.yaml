@@ -1,0 +1,51 @@
+{{- if and .Values.enabled .Values.partnerReminders.enabled }}
+# Backend admin jadvali bo'yicha hamkor chatlariga text eslatma yuboruvchi alohida Telegram bot worker.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.partnerReminders.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.partnerReminders.name }}
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.partnerReminders.name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.partnerReminders.name }}
+        app.kubernetes.io/part-of: {{ .Values.partOf }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: {{ .Values.registrySecretName }}
+      containers:
+        - name: partner-reminders
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/app/partner-reminders"]
+          envFrom:
+            - secretRef:
+                name: {{ .Values.partnerReminders.secretName }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+{{- end }}

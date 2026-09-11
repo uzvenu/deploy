@@ -1,0 +1,98 @@
+# PrometheusRule for Venu — example alert rules.
+#
+# NOT placed under templates/ on purpose: this CRD only exists on
+# clusters running the Prometheus Operator (kube-prometheus-stack), and it is
+# not known whether this cluster has it. Applying it without the CRD would fail
+# the whole ArgoCD sync. When the operator is confirmed, add "- alerts.yaml"
+# to chart templates. Rationale and thresholds: backend/docs/OPERATIONS.md.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: venu-alerts
+  labels:
+    app.kubernetes.io/part-of: venu
+spec:
+  groups:
+    - name: venu-api
+      rules:
+        - alert: VenuAPIDown
+          expr: up{namespace="venu", pod=~"venu-api.*"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Venu API scrape target down"
+            description: "Prometheus 2 daqiqadan beri venu-api dan metrika o'qiy olmayapti."
+
+        - alert: VenuHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{namespace="venu", status=~"5.."}[5m]))
+              / sum(rate(http_requests_total{namespace="venu"}[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "5xx nisbati 5% dan yuqori"
+            description: "So'nggi 5 daqiqada HTTP so'rovlarning 5% dan ko'pi 5xx bilan tugadi."
+
+        - alert: VenuHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le) (rate(http_request_duration_seconds_bucket{namespace="venu"}[5m]))
+            ) > 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "p95 latency > 1s"
+            description: "API p95 javob vaqti 10 daqiqadan beri 1 soniyadan oshiq."
+
+        - alert: VenuDBPoolSaturated
+          expr: db_pool_acquired_conns{namespace="venu"} >= db_pool_max_conns{namespace="venu"}
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "pgx pool to'lgan"
+            description: "Barcha DB ulanishlar band — so'rovlar navbatda kutmoqda. Sekin query yoki pool limitini tekshiring."
+
+    - name: venu-business
+      rules:
+        - alert: VenuPaymentCallbackFailures
+          expr: sum by (gateway) (increase(payment_callbacks_total{outcome="failure"}[15m])) > 5
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "To'lov callback xatolari ({{ $labels.gateway }})"
+            description: "15 daqiqada 5 dan ortiq muvaffaqiyatsiz to'lov callback. Gateway sozlamalari yoki imzo tekshiruvi buzilgan bo'lishi mumkin."
+
+        - alert: VenuCarrierBookingFailures
+          expr: sum by (carrier) (increase(carrier_bookings_total{outcome="failure"}[30m])) > 3
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kuryer booking xatolari ({{ $labels.carrier }})"
+            description: "30 daqiqada 3 dan ortiq muvaffaqiyatsiz carrier booking."
+
+        - alert: VenuWorkerJobFailures
+          expr: sum by (kind) (increase(worker_jobs_total{outcome="failure"}[15m])) > 10
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Worker job xatolari ({{ $labels.kind }})"
+            description: "Background joblar qayta-qayta yiqilmoqda (River retry qiladi, lekin sababi tekshirilishi kerak)."
+
+    - name: venu-backup
+      rules:
+        # kube-state-metrics kerak (kube-prometheus-stack tarkibida bor).
+        - alert: VenuBackupJobFailed
+          expr: kube_job_status_failed{namespace="venu", job_name=~"postgres-backup.*"} > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kechagi pg_dump backup yiqildi"
+            description: "postgres-backup CronJob muvaffaqiyatsiz tugadi — RPO 24h dan oshib ketmoqda."
