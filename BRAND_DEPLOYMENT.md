@@ -38,7 +38,8 @@ Assume the brand slug is `acme`.
 5. Create the namespaces and out-of-band Secrets before enabling the root bootstrap entries.
 6. Use a fresh PostgreSQL password, JWT keypair, NextAuth secret, storage signing key and backend-agent service token.
 7. Keep `APP_AUTH_CUSTOMER_OTP_ENABLED=false` and `worker.enabled=false` until the brand has its own Eskiz credentials and moderated SMS templates. Never borrow another brand's provider credentials.
-8. Configure frontend runtime identity in its Secret:
+8. Keep `storage.enabled=false` and `backup.enabled=false` while `api.enabled=false`. The `local-path` class binds a claim only on first mount, so a claim with no consumer stays `Pending` and holds the Argo Application in `Progressing`. Enable all three together.
+9. Configure frontend runtime identity in its Secret:
    - `BRAND_ID=acme`
    - `BRAND_NAME=Acme`
    - `SITE_URL=https://acme.example`
@@ -46,10 +47,10 @@ Assume the brand slug is `acme`.
    - `BRAND_PRIMARY_FOREGROUND=#rrggbb`
    - `BRAND_RING_COLOR=#rrggbb`
    - optional root-relative asset overrides such as `BRAND_LOGO_PATH=/brands/acme/logo.png`
-9. Configure backend identity with matching `APP_BRAND_*` values.
-10. Configure the agent with matching `BRAND_*`, `CATALOG_API_BASE`, `CATALOG_SITE_BASE` and a fresh `DATABASE_URL`.
-11. Run `helm lint` and `helm template` for all charts with real values, then push. The root app-of-apps bootstrap creates the child Applications and all workloads remain GitOps-managed.
-12. Verify readiness, health endpoints and an empty/fresh database before changing DNS or the external load balancer.
+10. Configure backend identity with matching `APP_BRAND_*` values.
+11. Configure the agent with matching `BRAND_*`, `CATALOG_API_BASE`, `CATALOG_SITE_BASE` and a fresh `DATABASE_URL`.
+12. Run `helm lint` and `helm template` for all charts with real values, then push. The root app-of-apps bootstrap creates the child Applications and all workloads remain GitOps-managed.
+13. Verify readiness, health endpoints and an empty/fresh database before changing DNS or the external load balancer.
 
 Unknown frontend `BRAND_ID` values are supported without TypeScript changes when `BRAND_NAME`, `SITE_URL`, `BRAND_LOGO_PATH` and `BRAND_PRIMARY_COLOR` are supplied. Logo paths may be root-relative bundled assets or absolute HTTPS URLs; custom brands do not inherit another brand's contacts, links or images. Palette changes require only a Secret update and controlled storefront restart.
 
