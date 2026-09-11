@@ -13,10 +13,8 @@ spec:
       app.kubernetes.io/name: {{ .Values.postgres.name }}
   policyTypes:
     - Ingress
+  # This cluster's CNI rejects even same-namespace podSelector peers. Keep the
+  # policy open until namespace default-deny is implemented and tested end-to-end.
   ingress:
-    - from:
-        - podSelector: {}
-      ports:
-        - protocol: TCP
-          port: 5432
+    - {}
 {{- end }}
