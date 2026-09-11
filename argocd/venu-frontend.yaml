@@ -1,0 +1,36 @@
+# Latta Putta's storefront.
+#
+# Still the only workload deployed from raw kustomize rather than from
+# charts/storefront, which is what the other brand's storefront uses. Moving it
+# onto the shared chart is a separate step; until then this file exists so the
+# Application can be recreated from git — it was applied by hand and was not
+# recorded anywhere.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: venu-frontend
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: venu
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/uzvenu/frontend.git
+    targetRevision: main
+    path: deploy/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: venu
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        maxDuration: 3m
+        factor: 2
