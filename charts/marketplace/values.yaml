@@ -50,6 +50,8 @@ api:
   storageClaimName: ""
   # Optional out-of-band Secret containing API-only environment variables.
   virtualTryOnSecretName: ""
+  # Display preference only; settlement and every persisted amount remain UZS.
+  currencyDefaultDisplay: UZS
 
 storage:
   # Enable together with api.enabled. local-path binds a claim only on first
