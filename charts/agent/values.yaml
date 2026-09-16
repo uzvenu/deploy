@@ -41,6 +41,8 @@ modernAgent:
   modes: http
   alertChatID: ""
   alertSource: ""
+  # Public per-brand settings and Secret references; never put secret values here.
+  extraEnv: []
 
 # The agent talking to the legacy 6Valley API. A brand with no legacy system
 # leaves this off.

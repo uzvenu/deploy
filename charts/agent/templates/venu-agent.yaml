@@ -51,6 +51,9 @@ spec:
               value: {{ .Values.modernAgent.alertChatID | quote }}
             - name: ALERT_SOURCE
               value: {{ .Values.modernAgent.alertSource | quote }}
+            {{- with .Values.modernAgent.extraEnv }}
+{{ toYaml . | indent 12 }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.modernAgent.secretName }}
