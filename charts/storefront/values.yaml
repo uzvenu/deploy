@@ -18,6 +18,10 @@ enabled: false
 name: storefront
 replicas: 1
 
+# Public runtime overrides only. Credentials remain in secretName.
+# Explicit env entries take precedence over envFrom (including stale brand assets).
+env: {}
+
 # Same image for every brand; the brand is chosen at runtime by BRAND_ID in
 # secretName. CD overwrites the tag with the commit SHA.
 image:

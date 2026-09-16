@@ -35,6 +35,13 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ .Values.secretName }}
+          {{- with .Values.env }}
+          env:
+            {{- range $name, $value := . }}
+            - name: {{ $name | quote }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
