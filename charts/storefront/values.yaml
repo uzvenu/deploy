@@ -31,6 +31,13 @@ image:
 service:
   port: 3000
 
+# The admin and seller SPA is embedded in the API binary and uses same-origin
+# /api/v1 calls. Route its entry paths and Vite assets directly to that Service.
+panel:
+  enabled: true
+  serviceName: venu-api
+  servicePort: 8080
+
 route:
   enabled: true
   name: storefront

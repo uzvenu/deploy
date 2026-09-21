@@ -93,6 +93,27 @@ spec:
       name: {{ .Values.route.gatewayName }}
       namespace: {{ .Values.route.gatewayNamespace }}
   rules:
+    {{- if .Values.panel.enabled }}
+    # The admin/seller SPA is embedded in the Go API binary. These more-specific
+    # matches win over the storefront catch-all below; without them Next.js sees
+    # /admin and correctly returns 404 because it has no panel route.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /admin
+        - path:
+            type: PathPrefix
+            value: /seller
+        - path:
+            type: PathPrefix
+            value: /assets
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: {{ .Values.panel.serviceName }}
+          port: {{ .Values.panel.servicePort }}
+          weight: 1
+    {{- end }}
     - matches:
         - path:
             type: PathPrefix
