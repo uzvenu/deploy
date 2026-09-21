@@ -51,6 +51,8 @@ legacyAgent:
   name: legacy-agent
   alertChatID: ""
   alertSource: ""
+  # Public per-brand settings and Secret references; never put secret values here.
+  extraEnv: []
 
 sellerAgent:
   # Needs a control API token and at least one account before it can run.

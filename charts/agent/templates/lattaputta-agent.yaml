@@ -48,6 +48,9 @@ spec:
               value: {{ .Values.legacyAgent.alertChatID | quote }}
             - name: ALERT_SOURCE
               value: {{ .Values.legacyAgent.alertSource | quote }}
+            {{- with .Values.legacyAgent.extraEnv }}
+{{ toYaml . | indent 12 }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.legacyAgent.secretName }}
