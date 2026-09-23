@@ -42,6 +42,14 @@ image:
 
 api:
   enabled: true
+  # Authoritative per-brand switches. Credentials remain in api.secretName;
+  # the backend also requires each provider's complete credential set.
+  paymeEnabled: false
+  clickEnabled: false
+  btsEnabled: false
+  yandexEnabled: false
+  dhlEnabled: false
+  dhlBaseURL: https://express.api.dhl.com/mydhlapi/test
   # Not brand-named despite appearances, and not safe to change per brand: the
   # storefront's CD bakes BACKEND_URL=http://venu-api:8080 into the shared image
   # at build time, so every brand namespace must answer on this name.

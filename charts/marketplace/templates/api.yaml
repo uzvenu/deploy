@@ -56,6 +56,18 @@ spec:
               value: 90s
             - name: APP_CURRENCY_DEFAULT_DISPLAY
               value: {{ .Values.api.currencyDefaultDisplay | quote }}
+            - name: APP_PAYMENTS_PAYME_ENABLED
+              value: {{ .Values.api.paymeEnabled | quote }}
+            - name: APP_PAYMENTS_CLICK_ENABLED
+              value: {{ .Values.api.clickEnabled | quote }}
+            - name: APP_DELIVERY_BTS_ENABLED
+              value: {{ .Values.api.btsEnabled | quote }}
+            - name: APP_DELIVERY_YANDEX_ENABLED
+              value: {{ .Values.api.yandexEnabled | quote }}
+            - name: APP_DELIVERY_DHL_ENABLED
+              value: {{ .Values.api.dhlEnabled | quote }}
+            - name: APP_DELIVERY_DHL_BASE_URL
+              value: {{ .Values.api.dhlBaseURL | quote }}
           volumeMounts:
             - name: jwt-keys
               mountPath: /app/keys
