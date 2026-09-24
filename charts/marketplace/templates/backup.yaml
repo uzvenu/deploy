@@ -65,7 +65,7 @@ spec:
                   export PGPASSWORD="$POSTGRES_PASSWORD"
                   out="/backups/{{ .Values.backup.filePrefix }}-$(date +%Y-%m-%d).dump"
                   echo "dumping to $out"
-                  pg_dump -h {{ .Values.postgres.serviceName }} -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$out"
+                  pg_dump -h {{ default .Values.postgres.serviceName .Values.postgres.externalHost | quote }} -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$out"
                   echo "dump done: $(du -h "$out" | cut -f1)"
 {{- if .Values.storage.enabled }}
                   media="/backups/{{ .Values.backup.filePrefix }}-media-$(date +%Y-%m-%d).tar.gz"

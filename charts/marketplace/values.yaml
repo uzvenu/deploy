@@ -90,6 +90,9 @@ postgres:
   enabled: true
   name: postgres
   serviceName: postgres
+  # Optional host used by backup jobs when PostgreSQL runs outside Kubernetes.
+  # Keep empty for the in-cluster Service above.
+  externalHost: ""
   dataClaimName: postgres-data
   storageClassName: local-path
   storageSize: 10Gi
