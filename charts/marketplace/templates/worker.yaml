@@ -38,6 +38,13 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ .Values.api.secretName }}
+{{- if .Values.api.virtualTryOnSecretName }}
+            - secretRef:
+                name: {{ .Values.api.virtualTryOnSecretName }}
+{{- end }}
+          volumeMounts:
+            - name: storage
+              mountPath: /app/storage
           resources:
             requests:
               cpu: 50m
@@ -45,4 +52,12 @@ spec:
             limits:
               cpu: "1"
               memory: 512Mi
+      volumes:
+        - name: storage
+{{ if .Values.api.storageClaimName }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.api.storageClaimName }}
+{{ else }}
+          emptyDir: {}
+{{ end }}
 {{- end }}
