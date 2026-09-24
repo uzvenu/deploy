@@ -53,6 +53,8 @@ modernAgent:
 legacyAgent:
   enabled: false
   name: legacy-agent
+  nodeSelector: {}
+  affinity: {}
   alertChatID: ""
   alertSource: ""
   # Public per-brand settings and Secret references; never put secret values here.
@@ -65,6 +67,8 @@ sellerAgent:
 outreach:
   enabled: false
   name: outreach
+  nodeSelector: {}
+  affinity: {}
 
 partnerReminders:
   enabled: false

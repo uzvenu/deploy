@@ -26,6 +26,14 @@ spec:
         app.kubernetes.io/name: {{ .Values.legacyAgent.name }}
         app.kubernetes.io/part-of: {{ .Values.partOf }}
     spec:
+      {{- with .Values.legacyAgent.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.legacyAgent.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       imagePullSecrets:
         - name: {{ .Values.registrySecretName }}
       containers:
