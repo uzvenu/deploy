@@ -115,6 +115,11 @@ spec:
         - path:
             type: PathPrefix
             value: /assets
+        {{- if .Values.panel.apiDirect }}
+        - path:
+            type: PathPrefix
+            value: /api
+        {{- end }}
       backendRefs:
         - group: ""
           kind: Service

@@ -39,6 +39,9 @@ service:
 # /api/v1 calls. Route its entry paths and Vite assets directly to that Service.
 panel:
   enabled: true
+  # Route same-origin /api calls directly to the panel API service when a
+  # brand's public storefront is also its API origin.
+  apiDirect: false
   serviceName: venu-api
   servicePort: 8080
 
