@@ -44,6 +44,8 @@ api:
   enabled: true
   # Optional hard placement for stateless API pods. Keep empty for scheduler choice.
   nodeSelector: {}
+  # Optional soft placement. Kubernetes evaluates weights from 1 to 100.
+  affinity: {}
   # Authoritative per-brand switches. Credentials remain in api.secretName;
   # the backend also requires each provider's complete credential set.
   paymeEnabled: false
@@ -77,6 +79,8 @@ worker:
   name: worker
   # Optional hard placement for stateless worker pods. Keep empty for scheduler choice.
   nodeSelector: {}
+  # Optional soft placement. Kubernetes evaluates weights from 1 to 100.
+  affinity: {}
 
 migration:
   enabled: true

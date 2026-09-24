@@ -33,6 +33,10 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       imagePullSecrets:
         - name: {{ .Values.registrySecretName }}
       containers:

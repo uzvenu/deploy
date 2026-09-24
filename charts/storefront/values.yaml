@@ -19,6 +19,8 @@ name: storefront
 replicas: 1
 # Optional hard placement for this stateless storefront.
 nodeSelector: {}
+# Optional soft placement. Kubernetes evaluates weights from 1 to 100.
+affinity: {}
 
 # Public runtime overrides only. Credentials remain in secretName.
 # Explicit env entries take precedence over envFrom (including stale brand assets).

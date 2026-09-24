@@ -40,6 +40,8 @@ modernAgent:
   name: agent
   # Optional hard placement for the stateless modern agent.
   nodeSelector: {}
+  # Optional soft placement. Kubernetes evaluates weights from 1 to 100.
+  affinity: {}
   modes: http
   alertChatID: ""
   alertSource: ""
