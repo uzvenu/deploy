@@ -38,6 +38,8 @@ image:
 modernAgent:
   enabled: false
   name: agent
+  # Optional hard placement for the stateless modern agent.
+  nodeSelector: {}
   modes: http
   alertChatID: ""
   alertSource: ""

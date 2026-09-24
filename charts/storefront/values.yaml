@@ -17,6 +17,8 @@ enabled: false
 
 name: storefront
 replicas: 1
+# Optional hard placement for this stateless storefront.
+nodeSelector: {}
 
 # Public runtime overrides only. Credentials remain in secretName.
 # Explicit env entries take precedence over envFrom (including stale brand assets).

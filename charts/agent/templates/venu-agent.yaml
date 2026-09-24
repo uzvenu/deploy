@@ -26,6 +26,10 @@ spec:
         app.kubernetes.io/name: {{ .Values.modernAgent.name }}
         app.kubernetes.io/part-of: {{ .Values.partOf }}
     spec:
+      {{- with .Values.modernAgent.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       imagePullSecrets:
         - name: {{ .Values.registrySecretName }}
       containers:

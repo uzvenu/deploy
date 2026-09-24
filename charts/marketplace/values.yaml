@@ -42,6 +42,8 @@ image:
 
 api:
   enabled: true
+  # Optional hard placement for stateless API pods. Keep empty for scheduler choice.
+  nodeSelector: {}
   # Authoritative per-brand switches. Credentials remain in api.secretName;
   # the backend also requires each provider's complete credential set.
   paymeEnabled: false
@@ -73,6 +75,8 @@ storage:
 worker:
   enabled: true
   name: worker
+  # Optional hard placement for stateless worker pods. Keep empty for scheduler choice.
+  nodeSelector: {}
 
 migration:
   enabled: true
