@@ -100,6 +100,8 @@ spec:
               value: {{ .Values.api.paymeEnabled | quote }}
             - name: APP_PAYMENTS_CLICK_ENABLED
               value: {{ .Values.api.clickEnabled | quote }}
+            - name: APP_PAYMENTS_PLUM_ENABLED
+              value: {{ .Values.api.plumEnabled | quote }}
             - name: APP_DELIVERY_BTS_ENABLED
               value: {{ .Values.api.btsEnabled | quote }}
             - name: APP_DELIVERY_YANDEX_ENABLED

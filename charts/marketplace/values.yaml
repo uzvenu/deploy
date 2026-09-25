@@ -57,6 +57,7 @@ api:
   # the backend also requires each provider's complete credential set.
   paymeEnabled: false
   clickEnabled: false
+  plumEnabled: false
   btsEnabled: false
   yandexEnabled: false
   dhlEnabled: false
