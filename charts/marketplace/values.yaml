@@ -44,6 +44,11 @@ api:
   enabled: true
   # Optional pod-level security context, scoped per brand through its values file.
   podSecurityContext: {}
+  # Optional one-time, idempotent directory permission repair for legacy media
+  # copied into a PVC by a different numeric user/group.
+  storagePermissionFix:
+    enabled: false
+    group: 101
   # Optional hard placement for stateless API pods. Keep empty for scheduler choice.
   nodeSelector: {}
   # Optional soft placement. Kubernetes evaluates weights from 1 to 100.

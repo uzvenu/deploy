@@ -43,6 +43,34 @@ spec:
       {{- end }}
       imagePullSecrets:
         - name: {{ .Values.registrySecretName }}
+      {{- if .Values.api.storagePermissionFix.enabled }}
+      {{- $storageGroup := required "api.storagePermissionFix.group is required when enabled" .Values.api.storagePermissionFix.group }}
+      {{- if not (regexMatch "^[0-9]+$" (toString $storageGroup)) }}
+      {{- fail "api.storagePermissionFix.group must be a numeric GID" }}
+      {{- end }}
+      initContainers:
+        - name: fix-storage-directory-permissions
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/bin/sh", "-c"]
+          args:
+            - >-
+              find /app/storage -type d -exec chgrp "$STORAGE_GROUP" {} + &&
+              find /app/storage -type d -exec chmod g+rws {} +
+          env:
+            - name: STORAGE_GROUP
+              value: {{ $storageGroup | quote }}
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER"]
+          volumeMounts:
+            - name: storage
+              mountPath: /app/storage
+      {{- end }}
       containers:
         - name: api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
