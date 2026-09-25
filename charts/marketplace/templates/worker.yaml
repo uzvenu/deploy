@@ -26,6 +26,10 @@ spec:
         prometheus.io/port: "9090"
         prometheus.io/path: /metrics
     spec:
+      {{- with .Values.worker.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.worker.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
