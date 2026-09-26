@@ -41,6 +41,7 @@ image:
   tag: bootstrap
 
 productImport:
+  contentAIEnabled: false
   imageSource: excel
   imageMode: provided
   imageAIEnabled: false

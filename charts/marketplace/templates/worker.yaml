@@ -55,6 +55,8 @@ spec:
                 name: {{ .Values.api.virtualTryOnSecretName }}
 {{- end }}
           env:
+            - name: APP_PRODUCT_IMPORT_AI_ENABLED
+              value: {{ .Values.productImport.contentAIEnabled | quote }}
             - name: APP_PRODUCT_IMPORT_IMAGE_SOURCE
               value: {{ .Values.productImport.imageSource | quote }}
             - name: APP_PRODUCT_IMPORT_IMAGE_MODE
