@@ -40,6 +40,13 @@ image:
   repository: registry.iprogrammer.uz/venu/backend
   tag: bootstrap
 
+productImport:
+  imageSource: excel
+  imageMode: provided
+  imageAIEnabled: false
+  imageSearchBaseURL: https://api.openverse.org/v1/images/
+  imageSearchTimeout: 15s
+
 api:
   enabled: true
   # Optional pod-level security context, scoped per brand through its values file.

@@ -54,6 +54,17 @@ spec:
             - secretRef:
                 name: {{ .Values.api.virtualTryOnSecretName }}
 {{- end }}
+          env:
+            - name: APP_PRODUCT_IMPORT_IMAGE_SOURCE
+              value: {{ .Values.productImport.imageSource | quote }}
+            - name: APP_PRODUCT_IMPORT_IMAGE_MODE
+              value: {{ .Values.productImport.imageMode | quote }}
+            - name: APP_PRODUCT_IMPORT_IMAGE_AI_ENABLED
+              value: {{ .Values.productImport.imageAIEnabled | quote }}
+            - name: APP_PRODUCT_IMPORT_IMAGE_SEARCH_BASE_URL
+              value: {{ .Values.productImport.imageSearchBaseURL | quote }}
+            - name: APP_PRODUCT_IMPORT_IMAGE_SEARCH_TIMEOUT
+              value: {{ .Values.productImport.imageSearchTimeout | quote }}
           volumeMounts:
             - name: storage
               mountPath: /app/storage
