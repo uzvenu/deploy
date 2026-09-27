@@ -39,8 +39,9 @@ service:
 # /api/v1 calls. Route its entry paths and Vite assets directly to that Service.
 panel:
   enabled: true
-  # Route same-origin /api calls and the API health probe directly to the
+  # Route same-origin /api/v1 calls and the API health probe directly to the
   # panel API service when a brand's public storefront is also its API origin.
+  # The wider /api prefix belongs to storefront handlers such as NextAuth.
   apiDirect: false
   serviceName: venu-api
   servicePort: 8080
