@@ -17,7 +17,7 @@ vaqtincha pauza qilinadi.
 ## Cutover
 
 Bu buyruqlarni production klaster konteksti va `agent` namespace tekshirilgandan keyin
-inson operator bajaradi. Kod agenti commit/push yoki deploy qilmaydi.
+inson operator bajaradi. Kod agenti deploy qilmaydi.
 
 1. Context, ruxsat va joriy health:
 
