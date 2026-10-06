@@ -1,0 +1,23 @@
+{{- if .Values.enabled -}}
+{{- $_ := required "partOf is required: CRM instance ownership label" .Values.partOf -}}
+{{- $_ := required "registrySecretName is required: image pull Secret in the CRM namespace" .Values.registrySecretName -}}
+{{- $_ := required "api.name is required" .Values.api.name -}}
+{{- $_ := required "api.image.repository is required" .Values.api.image.repository -}}
+{{- $_ := required "api.image.tag is required and must be replaced by CD with an immutable commit SHA" .Values.api.image.tag -}}
+{{- if not (regexMatch "^[0-9a-f]{7,40}$" .Values.api.image.tag) -}}
+{{- fail "api.image.tag must be an immutable 7-40 character lowercase commit SHA" -}}
+{{- end -}}
+{{- $_ := required "api.secretName is required: out-of-band CRM runtime Secret" .Values.api.secretName -}}
+{{- $_ := required "panel.name is required" .Values.panel.name -}}
+{{- $_ := required "panel.image.repository is required" .Values.panel.image.repository -}}
+{{- $_ := required "panel.image.tag is required and must be replaced by CD with an immutable commit SHA" .Values.panel.image.tag -}}
+{{- if not (regexMatch "^[0-9a-f]{7,40}$" .Values.panel.image.tag) -}}
+{{- fail "panel.image.tag must be an immutable 7-40 character lowercase commit SHA" -}}
+{{- end -}}
+{{- if .Values.route.enabled -}}
+{{- $_ := required "route.hostname is required: CRM public hostname" .Values.route.hostname -}}
+{{- end -}}
+{{- if .Values.migration.enabled -}}
+{{- $_ := required "migration.command is required" .Values.migration.command -}}
+{{- end -}}
+{{- end -}}

@@ -1,0 +1,43 @@
+{{- if and .Values.enabled .Values.route.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Values.route.name }}
+  labels:
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
+spec:
+  parentRefs:
+    - name: {{ .Values.route.gatewayName }}
+      namespace: {{ .Values.route.gatewayNamespace }}
+  hostnames:
+    - {{ .Values.route.hostname | quote }}
+  rules:
+    # Gateway API chooses the most specific match, so API traffic wins over
+    # the catch-all panel rule regardless of implementation ordering.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: {{ .Values.route.apiPathPrefix }}
+      backendRefs:
+        - name: {{ .Values.api.name }}
+          port: {{ .Values.api.port }}
+    {{- if .Values.route.exposeHealth }}
+    - matches:
+        - path:
+            type: Exact
+            value: {{ .Values.api.healthPath }}
+        - path:
+            type: Exact
+            value: {{ .Values.api.readinessPath }}
+      backendRefs:
+        - name: {{ .Values.api.name }}
+          port: {{ .Values.api.port }}
+    {{- end }}
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ .Values.panel.name }}
+          port: {{ .Values.panel.port }}
+{{- end }}

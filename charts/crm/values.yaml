@@ -1,0 +1,62 @@
+enabled: true
+
+# Instance identity, image pull credentials, runtime Secrets and public hostname
+# intentionally have no defaults. templates/validate.yaml enforces them.
+
+api:
+  replicaCount: 1
+  port: 8091
+  healthPath: /healthz
+  readinessPath: /readyz
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  strategy:
+    maxUnavailable: 0
+    maxSurge: 1
+
+panel:
+  replicaCount: 1
+  port: 80
+  readinessPath: /
+  livenessPath: /
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  strategy:
+    maxUnavailable: 0
+    maxSurge: 1
+
+migration:
+  enabled: true
+  name: migrate
+  command:
+    - /crm-migrate
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+
+route:
+  enabled: true
+  name: crm
+  gatewayName: main-gateway
+  gatewayNamespace: default
+  apiPathPrefix: /api/v1
+  exposeHealth: false
+
+networkPolicy:
+  enabled: true
+  # This must be the namespace from which Gateway dataplane connections
+  # originate. Override it if the controller does not run beside the Gateway.
+  gatewayNamespace: default
+  # Namespaces containing trusted Telegram/Instagram workers that call the
+  # token-authenticated /api/v1/internal/leads endpoint.
+  ingestionNamespaces: []
+
