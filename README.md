@@ -54,7 +54,8 @@ CRM is not a `brandApplications` child. No live bootstrap is performed by local 
 - The Gateway dataplane source namespace must equal
   `networkPolicy.gatewayNamespace` (default `default`), and PostgreSQL must be
   reachable on TCP 5432 while S3 is reachable over HTTPS 443.
-- Set `CRM_ENV=production`, `CRM_HTTP_ADDR=:8091`, `CRM_STORAGE_DRIVER=s3`,
+- Set `CRM_ENV=production`, `CRM_PUBLIC_BASE_URL=https://crm.venu.uz`,
+  `CRM_HTTP_ADDR=:8091`, `CRM_STORAGE_DRIVER=s3`,
   `CRM_DATABASE_URL`, `CRM_STORAGE_ENDPOINT`, `CRM_STORAGE_REGION`,
   `CRM_STORAGE_BUCKET`, `CRM_STORAGE_ACCESS_KEY` and `CRM_STORAGE_SECRET_KEY`
   in `crm-env`. Provision the bootstrap administrator securely (password at
@@ -73,6 +74,10 @@ CRM is not a `brandApplications` child. No live bootstrap is performed by local 
   network permission does not replace ingestion-token authentication. API egress
   allows DNS in `kube-system` and TCP 5432/443 to any destination, not endpoint
   allowlisting; custom DB/S3 ports or DNS topology require policy adjustments.
+- Use a dedicated private storage origin, exact-origin browser PUT CORS, and a
+  staging-prefix lifecycle. Signed PUT requires the exact reserved byte length
+  and MIME type; completion publishes an immutable final object. Do not reuse
+  application cookies or host application pages on the storage origin.
 - Backend CD must replace both `api.image.tag` and `panel.image.tag` in
   `helm/crm-values.yaml` with immutable commit SHAs before production sync.
 - The panel image must run as UID/GID 101, permit that user to read its static
