@@ -1,0 +1,62 @@
+{{- if .Values.enabled }}
+{{- $crm := .Values.crmApplication }}
+{{- if or $crm.enabled $crm.namespaceEnabled }}
+{{- $_ := required "crmApplication.partOf is required" $crm.partOf }}
+{{- $_ := required "crmApplication.namespace is required" $crm.namespace }}
+{{- end }}
+{{- if $crm.namespaceEnabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $crm.namespace | quote }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  labels:
+    app.kubernetes.io/part-of: {{ $crm.partOf | quote }}
+---
+{{- end }}
+{{- if $crm.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ required "crmApplication.name is required" $crm.name | quote }}
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-options: Delete=false
+  labels:
+    app.kubernetes.io/part-of: {{ $crm.partOf | quote }}
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/uzvenu/deploy.git
+      targetRevision: master
+      path: {{ required "crmApplication.chartPath is required" $crm.chartPath | quote }}
+      helm:
+        releaseName: {{ required "crmApplication.releaseName is required" $crm.releaseName | quote }}
+        valueFiles:
+          - {{ printf "$values/%s" (required "crmApplication.valuesFile is required" $crm.valuesFile) | quote }}
+    - repoURL: {{ required "crmApplication.valuesRepoURL is required" $crm.valuesRepoURL | quote }}
+      targetRevision: {{ required "crmApplication.valuesRevision is required" $crm.valuesRevision | quote }}
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ $crm.namespace | quote }}
+  syncPolicy:
+    {{- if $crm.autoSync }}
+    automated:
+      prune: true
+      selfHeal: true
+    {{- end }}
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        maxDuration: 3m
+        factor: 2
+{{- end }}
+{{- end }}

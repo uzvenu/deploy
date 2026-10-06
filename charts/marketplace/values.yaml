@@ -21,6 +21,22 @@ brandApplications:
   enabled: false
   items: []
 
+# Optional standalone CRM bootstrap owned by the existing platform/root instance.
+# Namespace provisioning, registration and automatic deployment are separate phases.
+# These opt-in defaults mirror argocd/crm.yaml; they do not identify a marketplace brand.
+crmApplication:
+  enabled: false
+  namespaceEnabled: false
+  autoSync: false
+  name: crm
+  partOf: venu-crm
+  namespace: venu-crm
+  chartPath: charts/crm
+  releaseName: crm
+  valuesRepoURL: https://github.com/uzvenu/backend.git
+  valuesRevision: master
+  valuesFile: helm/crm-values.yaml
+
 # --- required per brand, no defaults -----------------------------------------
 #
 # Listed here so the shape is discoverable; the values themselves belong to the
