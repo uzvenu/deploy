@@ -18,8 +18,8 @@ spec:
         parameters:
           - name: route.hostname
             value: crm.venu.uz
-    - repoURL: https://github.com/uzvenu/backend.git
-      targetRevision: master
+    - repoURL: https://github.com/uzvenu/crm.git
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

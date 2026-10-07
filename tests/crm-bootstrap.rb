@@ -4,7 +4,10 @@ require 'open3'
 
 ROOT = File.expand_path('..', __dir__)
 BASE = ['helm', 'template', 'venu', 'charts/marketplace', '-f',
-        '../backend/helm/lattaputta-values.yaml'].freeze
+        '../backend/helm/lattaputta-values.yaml',
+        '--set', 'crmApplication.enabled=false',
+        '--set', 'crmApplication.namespaceEnabled=false',
+        '--set', 'crmApplication.autoSync=false'].freeze
 
 def check(condition, message)
   raise message unless condition
@@ -41,7 +44,7 @@ def application(documents, automatic)
     { 'repoURL' => 'https://github.com/uzvenu/deploy.git', 'targetRevision' => 'master',
       'path' => 'charts/crm', 'helm' => { 'releaseName' => 'crm',
       'valueFiles' => ['$values/helm/crm-values.yaml'] } },
-    { 'repoURL' => 'https://github.com/uzvenu/backend.git', 'targetRevision' => 'master',
+    { 'repoURL' => 'https://github.com/uzvenu/crm.git', 'targetRevision' => 'main',
       'ref' => 'values' }
   ], 'Multi-source contract')
   check(spec['destination'] == { 'server' => 'https://kubernetes.default.svc',

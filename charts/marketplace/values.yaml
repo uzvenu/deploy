@@ -33,8 +33,8 @@ crmApplication:
   namespace: venu-crm
   chartPath: charts/crm
   releaseName: crm
-  valuesRepoURL: https://github.com/uzvenu/backend.git
-  valuesRevision: master
+  valuesRepoURL: https://github.com/uzvenu/crm.git
+  valuesRevision: main
   valuesFile: helm/crm-values.yaml
 
 # --- required per brand, no defaults -----------------------------------------
