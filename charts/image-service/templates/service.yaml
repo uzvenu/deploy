@@ -53,6 +53,9 @@ spec:
           image: {{ printf "%s:%s" .Values.image.repository $tag | quote }}
           imagePullPolicy: IfNotPresent
           securityContext:
+            # Docker/containerd default AppArmor blocks bubblewrap namespace mounts.
+            appArmorProfile:
+              type: Unconfined
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:

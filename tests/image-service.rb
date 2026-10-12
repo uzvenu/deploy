@@ -10,7 +10,7 @@ end
 
 def render(chart, values, namespace, settings = {}, success: true)
   args = ['helm', 'template', 'test', chart, '-f', values, '--namespace', namespace]
-  settings.each { |key, value| args.concat(['--set-string', "#{key}=#{value}"]) }
+  settings.each { |key, value| args.concat([%w[true false].include?(value) ? '--set' : '--set-string', "#{key}=#{value}"]) }
   output, error, status = Open3.capture3(*args, chdir: ROOT)
   check(status.success? == success, error)
   success ? YAML.load_stream(output).compact : []
@@ -21,6 +21,8 @@ values = '../agent/helm/lattaputta-image-service-values.yaml'
 render(chart, values, 'agent', {}, success: false)
 render(chart, values, 'agent', { 'image.tag' => 'latest' }, success: false)
 render(chart, values, 'venu-market', { 'image.tag' => SHA }, success: false)
+render(chart, values, 'agent', { 'image.tag' => SHA, 'clientNamespace' => '' }, success: false)
+render(chart, values, 'agent', { 'image.tag' => SHA, 'clientPodNames' => '' }, success: false)
 docs = render(chart, values, 'agent', { 'image.tag' => SHA })
 check(docs.map { |d| d['kind'] }.sort == %w[ConfigMap DaemonSet Deployment NetworkPolicy Service], 'Unexpected service resources')
 pod = docs.find { |d| d['kind'] == 'Deployment' }.dig('spec', 'template', 'spec')
@@ -46,18 +48,32 @@ check(init['command'].last.include?('ln "$tmp" "$target"'), 'Missing atomic no-c
 container = pod['containers'].first
 check(container['image'].end_with?(SHA), 'Wrong immutable image')
 check(container['securityContext'] == { 'allowPrivilegeEscalation' => false,
-  'readOnlyRootFilesystem' => true, 'capabilities' => { 'drop' => ['ALL'] } }, 'Container security weakened')
+  'readOnlyRootFilesystem' => true, 'appArmorProfile' => { 'type' => 'Unconfined' }, 'capabilities' => { 'drop' => ['ALL'] } }, 'Container security weakened')
 check(pod['volumes'].none? { |v| v.key?('hostPath') || v.key?('persistentVolumeClaim') }, 'Persistent or host mounts')
 check(container['env'].map { |e| e['name'] } == %w[IMAGE_SERVICE_TOKEN IMAGE_SERVICE_MODEL], 'Unrelated runtime secrets')
-peer = docs.find { |d| d['kind'] == 'NetworkPolicy' }.dig('spec', 'ingress', 0, 'from', 0)
+check(pod.dig('securityContext', 'appArmorProfile').nil?, 'AppArmor exception must be container-only')
+check(installer.dig('securityContext', 'appArmorProfile').nil?, 'Installer AppArmor changed')
+(installer['initContainers'] + installer['containers']).each do |c|
+  check(c.dig('securityContext', 'appArmorProfile').nil?, 'Installer container AppArmor changed')
+end
+workflow = File.read(File.join(ROOT, '../agent/.github/workflows/image-service-cd.yml'))
+check(workflow.include?('--security-opt apparmor=unconfined'), 'CI AppArmor differs from workload')
+check(workflow.include?('--security-opt seccomp="${GITHUB_WORKSPACE}/services/image-service/seccomp-amd64.json"'), 'CI bounded seccomp missing')
+check(!workflow.include?('--privileged') && !workflow.include?('seccomp=unconfined') && !workflow.include?('--cap-add'), 'CI privilege bypass')
+policy = docs.find { |d| d['kind'] == 'NetworkPolicy' }['spec']
+check(policy['policyTypes'] == ['Ingress'], 'Wrong network isolation type')
+check(policy['ingress'].length == 1 && policy['ingress'].first['from'].length == 1, 'Additional ingress peers')
+check(policy['ingress'].first['ports'] == [{'protocol' => 'TCP', 'port' => 8091}], 'Extra ingress ports')
+check(docs.find { |d| d['kind'] == 'Service' }.dig('spec', 'type') == 'ClusterIP', 'Public service exposure')
+peer = policy.dig('ingress', 0, 'from', 0)
 check(peer.dig('namespaceSelector', 'matchLabels', 'kubernetes.io/metadata.name') == 'venu', 'Wrong client brand namespace')
 check(peer.dig('podSelector', 'matchExpressions', 0, 'values') == %w[venu-api worker], 'Wrong client pods')
 
 root = 'charts/marketplace'
 root_values = '../backend/helm/lattaputta-values.yaml'
-base = render(root, root_values, 'venu')
+base = render(root, root_values, 'venu', { 'imageServiceApplication.enabled' => 'false' })
 check(base.none? { |d| d.dig('metadata', 'name') == 'codex-image-service' }, 'Default bootstrap enabled')
-active = render(root, root_values, 'venu', { 'imageServiceApplication.enabled' => 'true' })
+active = render(root, root_values, 'venu', { 'imageServiceApplication.enabled' => 'true', 'imageServiceApplication.autoSync' => 'false' })
 app = active.find { |d| d['kind'] == 'Application' && d.dig('metadata', 'name') == 'codex-image-service' }
 check(app, 'Root Application missing')
 check(app.dig('spec', 'destination', 'namespace') == 'agent', 'Wrong destination')

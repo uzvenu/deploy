@@ -2,8 +2,8 @@
 
 Codex remains pinned to 0.160.0. Chart defaults disable both the service and
 `seccomp.enabled`; only `agent/helm/lattaputta-image-service-values.yaml` opts in.
-The Latta Putta root Application remains manual-sync pending parent security
-review, credentials and an immutable service image tag. No Venu bootstrap.
+Parent-managed Latta Putta values enable bootstrap/auto-sync; this change does
+not alter activation settings, credentials or the image tag. No Venu bootstrap.
 
 ## Single source and updates
 
@@ -47,7 +47,7 @@ user namespaces and compatible LSM rules). Review node policy admission allowing
 this narrowly scoped root/hostPath installer before sync. No live changes are
 performed by these scripts. GitOps installation may race service startup: missing
 profiles fail container creation until the installer completes; never fall back
-to Unconfined. Review installer completion on every eligible node before traffic.
+to seccomp Unconfined. Review installer completion on every eligible node before traffic.
 
 ## Credentials and activation prerequisites
 
@@ -60,3 +60,30 @@ account authentication/quota; actual generation has provider cost/data sharing.
 Dedicated agent CI uses the canonical local seccomp path for Docker smoke before
 publishing and bumping the immutable image tag. Parent review is required before
 commit/push; deployment is GitOps only.
+
+## Authorized container-only AppArmor compatibility exception
+
+[Image service CD run 38245304864](https://github.com/uzvenu/chatbot/actions/runs/38245304864)
+passed policy validation and image build but failed sandbox smoke with
+`bwrap: Failed to make / slave: Permission denied`. The bounded policy already
+allows the mount syscall; the reported Docker default AppArmor mount denial
+requires a separate LSM compatibility exception, not additional seccomp grants.
+
+Only the image-service **container** sets `appArmorProfile.type: Unconfined`;
+the installer and pod defaults are unchanged. Dedicated CI uses the matching
+`--security-opt apparmor=unconfined`. This removes the outer AppArmor confinement
+for this container and is an explicit defense-in-depth reduction. It does NOT
+set seccomp Unconfined, disable Codex sandboxing, grant SYS_ADMIN, or make the
+container privileged. Bounded hashed Localhost seccomp, UID 1000, ALL capability
+drop, no-new-privileges, read-only rootfs, and Codex workspace/network enforcement
+remain. No node AppArmor profile installation or kernel configuration is needed;
+target Kubernetes/admission must support and permit the container AppArmor field.
+
+Ingress remains TCP 8091 only from the combined namespace `venu` AND pod name
+labels `venu-api`/`worker`; required client configuration is render-tested. The
+service is ClusterIP-only. Bearer authentication uses private-cluster HTTP, not
+TLS: the token is plaintext in transit. This assumes a trusted cluster network
+and an enforcing NetworkPolicy CNI; additive policies can broaden access. Do not
+expose this endpoint publicly; untrusted networking requires reviewed TLS/mTLS.
+Local Docker without AppArmor cannot reproduce the hosted runner's default
+AppArmor denial; a new hosted CI run is required after parent review/push.
