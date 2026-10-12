@@ -113,8 +113,13 @@ spec:
               - key: auth.json
                 path: auth.json
         - name: home
+          {{- if .Values.homePersistence.enabled }}
+          persistentVolumeClaim:
+            claimName: codex-image-service-home
+          {{- else }}
           emptyDir:
             sizeLimit: 2Gi
+          {{- end }}
         - name: tmp
           emptyDir:
             sizeLimit: 2Gi

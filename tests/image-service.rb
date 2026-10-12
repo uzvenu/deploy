@@ -18,13 +18,13 @@ end
 
 chart = 'charts/image-service'
 values = '../agent/helm/lattaputta-image-service-values.yaml'
-render(chart, values, 'agent', {}, success: false)
+render(chart, values, 'agent', { 'image.tag' => '' }, success: false)
 render(chart, values, 'agent', { 'image.tag' => 'latest' }, success: false)
 render(chart, values, 'venu-market', { 'image.tag' => SHA }, success: false)
 render(chart, values, 'agent', { 'image.tag' => SHA, 'clientNamespace' => '' }, success: false)
 render(chart, values, 'agent', { 'image.tag' => SHA, 'clientPodNames' => '' }, success: false)
 docs = render(chart, values, 'agent', { 'image.tag' => SHA })
-check(docs.map { |d| d['kind'] }.sort == %w[ConfigMap ConfigMap DaemonSet Deployment NetworkPolicy Service], 'Unexpected service resources')
+check(docs.map { |d| d['kind'] }.sort == %w[ConfigMap ConfigMap DaemonSet Deployment NetworkPolicy PersistentVolumeClaim Service], 'Unexpected service resources')
 pod = docs.find { |d| d['kind'] == 'Deployment' }.dig('spec', 'template', 'spec')
 check(pod['automountServiceAccountToken'] == false, 'Service account token exposed')
 check(pod.dig('securityContext', 'runAsNonRoot') == true, 'Root runtime')
@@ -49,7 +49,17 @@ container = pod['containers'].first
 check(container['image'].end_with?(SHA), 'Wrong immutable image')
 check(container['securityContext'] == { 'allowPrivilegeEscalation' => false,
   'readOnlyRootFilesystem' => true, 'appArmorProfile' => { 'type' => 'Localhost', 'localhostProfile' => 'codex-image-service-v1' }, 'capabilities' => { 'drop' => ['ALL'] } }, 'Container security weakened')
-check(pod['volumes'].none? { |v| v.key?('hostPath') || v.key?('persistentVolumeClaim') }, 'Persistent or host mounts')
+check(pod['volumes'].none? { |v| v.key?('hostPath') }, 'Host mounts')
+check(pod['volumes'].find { |v| v['name'] == 'home' }['persistentVolumeClaim'] == { 'claimName' => 'codex-image-service-home' }, 'Dedicated home claim missing')
+pvc = docs.find { |d| d['kind'] == 'PersistentVolumeClaim' }
+check(pvc.dig('metadata', 'annotations') == { 'helm.sh/resource-policy' => 'keep', 'argocd.argoproj.io/sync-options' => 'Prune=false,Delete=false' }, 'Credential retention missing')
+check(pvc.dig('spec', 'accessModes') == ['ReadWriteOnce'] && pvc.dig('spec', 'resources', 'requests', 'storage') == '2Gi', 'Home capacity/access mismatch')
+check(pvc.dig('spec', 'storageClassName') == 'local-path', 'Wrong storage class')
+check(docs.find { |d| d['kind'] == 'Deployment' }.dig('spec', 'strategy', 'type') == 'Recreate', 'Concurrent auth writers')
+check(container['volumeMounts'].find { |v| v['name'] == 'auth' }['readOnly'] == true, 'Seed writable')
+check(pod['volumes'].find { |v| v['name'] == 'tmp' }['emptyDir'] == { 'sizeLimit' => '2Gi' }, 'Temporary workspace persisted')
+ephemeral = render(chart, values, 'agent', { 'image.tag' => SHA, 'homePersistence.enabled' => 'false' })
+check(ephemeral.none? { |d| d['kind'] == 'PersistentVolumeClaim' }, 'Optional PVC enabled implicitly')
 check(container['env'].map { |e| e['name'] } == %w[IMAGE_SERVICE_TOKEN IMAGE_SERVICE_MODEL], 'Unrelated runtime secrets')
 check(pod.dig('securityContext', 'appArmorProfile').nil?, 'AppArmor policy must be container-only')
 apparmor = File.binread(File.join(ROOT, 'charts/image-service/files/apparmor.profile'))

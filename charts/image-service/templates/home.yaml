@@ -1,0 +1,17 @@
+{{- if and .Values.enabled .Values.homePersistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: codex-image-service-home
+  annotations:
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- if .Values.homePersistence.storageClass }}
+  storageClassName: {{ .Values.homePersistence.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.homePersistence.size | quote }}
+{{- end }}
