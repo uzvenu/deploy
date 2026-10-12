@@ -1,0 +1,21 @@
+enabled: false
+partOf: ""
+registrySecretName: ""
+image:
+  repository: ""
+  tag: ""
+authSecretName: ""
+envSecretName: ""
+clientNamespace: ""
+clientPodNames: []
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+# Explicit opt-in; only the dedicated brand values enable node provisioning.
+seccomp:
+  enabled: false
+  installerImage: busybox:1.37.0

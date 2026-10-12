@@ -1,0 +1,155 @@
+{{- if .Values.enabled }}
+{{- $_ := required "partOf is required" .Values.partOf }}
+{{- $_ := required "registrySecretName is required" .Values.registrySecretName }}
+{{- $_ := required "image.repository is required" .Values.image.repository }}
+{{- $tag := required "image.tag must be the immutable SHA built by image-service CD" .Values.image.tag }}
+{{- if not (regexMatch "^[a-f0-9]{7,40}$" $tag) }}
+{{- fail "image.tag must be an immutable commit SHA" }}
+{{- end }}
+{{- if ne .Release.Namespace "agent" }}
+{{- fail "image-service must be installed in namespace agent" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codex-image-service
+  labels:
+    app.kubernetes.io/name: codex-image-service
+    app.kubernetes.io/part-of: {{ .Values.partOf | quote }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: codex-image-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: codex-image-service
+        app.kubernetes.io/part-of: {{ .Values.partOf | quote }}
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          {{- if .Values.seccomp.enabled }}
+          type: Localhost
+          localhostProfile: codex-image-service/{{ .Files.Get "files/seccomp-amd64.json" | sha256sum }}.json
+          {{- else }}
+          type: RuntimeDefault
+          {{- end }}
+      imagePullSecrets:
+        - name: {{ .Values.registrySecretName | quote }}
+      containers:
+        - name: image-service
+          image: {{ printf "%s:%s" .Values.image.repository $tag | quote }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: 8091
+          env:
+            - name: IMAGE_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "envSecretName is required" .Values.envSecretName | quote }}
+                  key: IMAGE_SERVICE_TOKEN
+            - name: IMAGE_SERVICE_MODEL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.envSecretName | quote }}
+                  key: IMAGE_SERVICE_MODEL
+                  optional: true
+          volumeMounts:
+            - name: auth
+              mountPath: /var/run/codex-auth
+              readOnly: true
+            - name: home
+              mountPath: /home/node
+            - name: tmp
+              mountPath: /tmp
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: auth
+          secret:
+            secretName: {{ required "authSecretName is required" .Values.authSecretName | quote }}
+            defaultMode: 0440
+            items:
+              - key: auth.json
+                path: auth.json
+        - name: home
+          emptyDir:
+            sizeLimit: 2Gi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codex-image-service
+  labels:
+    app.kubernetes.io/name: codex-image-service
+    app.kubernetes.io/part-of: {{ .Values.partOf | quote }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: codex-image-service
+  ports:
+    - name: http
+      port: 8091
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: codex-image-service-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: codex-image-service
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ required "clientNamespace is required" .Values.clientNamespace | quote }}
+          podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  {{- toYaml (required "clientPodNames is required" .Values.clientPodNames) | nindent 18 }}
+      ports:
+        - protocol: TCP
+          port: 8091
+{{- end }}

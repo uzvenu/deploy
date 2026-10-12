@@ -1,0 +1,95 @@
+{{- if and .Values.enabled .Values.seccomp.enabled }}
+{{- $profile := .Files.Get "files/seccomp-amd64.json" }}
+{{- $hash := sha256sum $profile }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codex-image-service-seccomp-{{ $hash | trunc 16 }}
+immutable: true
+data:
+  profile.json: {{ $profile | toJson }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: codex-image-service-seccomp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: codex-image-service-seccomp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: codex-image-service-seccomp
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: install
+          image: {{ .Values.seccomp.installerImage | quote }}
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              target=/profiles/{{ $hash }}.json
+              echo '{{ $hash }}  /source/profile.json' | sha256sum -c -
+              if [ -e "$target" ] || [ -L "$target" ]; then
+                [ -f "$target" ] && [ ! -L "$target" ] && cmp -s /source/profile.json "$target"
+                exit
+              fi
+              tmp=$(mktemp /profiles/.install.XXXXXX)
+              trap 'rm -f "$tmp"' EXIT
+              cp /source/profile.json "$tmp"
+              chmod 0644 "$tmp"
+              # Atomic no-clobber publication; never replace a conflicting file.
+              if ! ln "$tmp" "$target"; then
+                [ -f "$target" ] && [ ! -L "$target" ] && cmp -s /source/profile.json "$target"
+              fi
+          volumeMounts:
+            - name: source
+              mountPath: /source
+              readOnly: true
+            - name: profiles
+              mountPath: /profiles
+      containers:
+        - name: idle
+          image: {{ .Values.seccomp.installerImage | quote }}
+          command: [/bin/sh, -ec, 'exec sleep infinity']
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              cpu: 10m
+              memory: 16Mi
+      volumes:
+        - name: source
+          configMap:
+            name: codex-image-service-seccomp-{{ $hash | trunc 16 }}
+            defaultMode: 0444
+        - name: profiles
+          hostPath:
+            path: /var/lib/kubelet/seccomp/codex-image-service
+            type: DirectoryOrCreate
+{{- end }}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: image-service
+description: Isolated authenticated Codex image generation HTTP service
+type: application
+version: 0.1.0
+appVersion: "0.160.0"

@@ -21,6 +21,12 @@ brandApplications:
   enabled: false
   items: []
 
+# Enable only in the existing Latta Putta root values after credentials and
+# the first sandbox-tested image tag are ready. Other brands remain disabled.
+imageServiceApplication:
+  enabled: false
+  autoSync: false
+
 # Optional standalone CRM bootstrap owned by the existing platform/root instance.
 # Namespace provisioning, registration and automatic deployment are separate phases.
 # These opt-in defaults mirror argocd/crm.yaml; they do not identify a marketplace brand.
