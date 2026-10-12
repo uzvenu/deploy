@@ -1,0 +1,17 @@
+{{- if .Values.enabled }}
+{{- $profile := required "AppArmor profile artifact is required" (.Files.Get "files/apparmor.profile") }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codex-image-service-apparmor-{{ sha256sum (printf "%s%s" $profile (.Files.Get "files/load-apparmor.cjs")) | trunc 16 }}
+  labels:
+    app.kubernetes.io/name: codex-image-service
+  annotations:
+    security.venu.uz/profile-name: codex-image-service-v1
+    security.venu.uz/profile-sha256: {{ sha256sum $profile | quote }}
+immutable: true
+data:
+  # Fixed reviewed source consumed only by the administrative loader init.
+  apparmor.profile: {{ $profile | toJson }}
+  load-apparmor.cjs: {{ .Files.Get "files/load-apparmor.cjs" | toJson }}
+{{- end }}

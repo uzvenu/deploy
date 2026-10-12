@@ -23,6 +23,8 @@ spec:
         app.kubernetes.io/name: codex-image-service-seccomp
     spec:
       automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: {{ .Values.registrySecretName | quote }}
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
@@ -64,6 +66,40 @@ spec:
               readOnly: true
             - name: profiles
               mountPath: /profiles
+        - name: load-apparmor
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+            appArmorProfile:
+              type: Unconfined
+            capabilities:
+              drop: [ALL]
+              add: [MAC_ADMIN]
+          command:
+            - /usr/local/bin/node
+            - /apparmor-source/load-apparmor.cjs
+            - {{ sha256sum (.Files.Get "files/apparmor.profile") | quote }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: apparmor-source
+              mountPath: /apparmor-source
+              readOnly: true
+            - name: apparmor-policy
+              mountPath: /apparmor-policy
+            - name: profiles
+              mountPath: /profiles
       containers:
         - name: idle
           image: {{ .Values.seccomp.installerImage | quote }}
@@ -84,6 +120,14 @@ spec:
               cpu: 10m
               memory: 16Mi
       volumes:
+        - name: apparmor-source
+          configMap:
+            name: codex-image-service-apparmor-{{ sha256sum (printf "%s%s" (.Files.Get "files/apparmor.profile") (.Files.Get "files/load-apparmor.cjs")) | trunc 16 }}
+            defaultMode: 0444
+        - name: apparmor-policy
+          hostPath:
+            path: /sys/kernel/security/apparmor
+            type: Directory
         - name: source
           configMap:
             name: codex-image-service-seccomp-{{ $hash | trunc 16 }}

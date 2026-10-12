@@ -3,7 +3,7 @@ require 'yaml'
 require 'open3'
 
 ROOT = File.expand_path('..', __dir__)
-BASE = ['helm', 'template', 'venu', 'charts/marketplace', '-f',
+BASE = ['helm', 'template', 'venu', 'charts/marketplace', '--namespace', 'venu', '-f',
         '../backend/helm/lattaputta-values.yaml',
         '--set', 'crmApplication.enabled=false',
         '--set', 'crmApplication.namespaceEnabled=false',

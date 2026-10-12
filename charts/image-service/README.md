@@ -26,7 +26,7 @@ from SHA-256. Never hand-edit the chart copy.
 ## Node security and rollout
 
 The minimal DaemonSet runs only on Linux amd64 nodes, matching the workload.
-Its root init container uses RuntimeDefault, drops ALL capabilities, forbids
+Its seccomp-install root init uses RuntimeDefault, drops ALL capabilities, forbids
 privilege escalation, has read-only rootfs and no API token. Its only writable
 mount is `/var/lib/kubelet/seccomp/codex-image-service` (DirectoryOrCreate).
 Root is necessary to create root-owned profile files; neither privileged mode
@@ -61,7 +61,7 @@ Dedicated agent CI uses the canonical local seccomp path for Docker smoke before
 publishing and bumping the immutable image tag. Parent review is required before
 commit/push; deployment is GitOps only.
 
-## Authorized container-only AppArmor compatibility exception
+## Dedicated enforcing AppArmor and administrative loader
 
 [Image service CD run 38245304864](https://github.com/uzvenu/chatbot/actions/runs/38245304864)
 passed policy validation and image build but failed sandbox smoke with
@@ -69,15 +69,93 @@ passed policy validation and image build but failed sandbox smoke with
 allows the mount syscall; the reported Docker default AppArmor mount denial
 requires a separate LSM compatibility exception, not additional seccomp grants.
 
-Only the image-service **container** sets `appArmorProfile.type: Unconfined`;
-the installer and pod defaults are unchanged. Dedicated CI uses the matching
-`--security-opt apparmor=unconfined`. This removes the outer AppArmor confinement
-for this container and is an explicit defense-in-depth reduction. It does NOT
-set seccomp Unconfined, disable Codex sandboxing, grant SYS_ADMIN, or make the
-container privileged. Bounded hashed Localhost seccomp, UID 1000, ALL capability
-drop, no-new-privileges, read-only rootfs, and Codex workspace/network enforcement
-remain. No node AppArmor profile installation or kernel configuration is needed;
-target Kubernetes/admission must support and permit the container AppArmor field.
+The service uses enforcing `codex-image-service-v1`, with bounded hashed Localhost
+seccomp, UID 1000, ALL capabilities dropped, no-new-privileges and read-only rootfs.
+Only the dedicated administrative `load-apparmor` init is AppArmor Unconfined.
+It runs the service image's `/usr/sbin/apparmor_parser` as root, drops ALL and adds
+only MAC_ADMIN: this capability is necessary to update the node kernel policy.
+It retains RuntimeDefault seccomp, no-new-privileges and read-only rootfs; it has
+no token, credentials or customer inputs. Its host mounts are the writable
+`/sys/kernel/security/apparmor` directory (not its parent), mounted inside the
+container at `/apparmor-policy`, and the existing dedicated seccomp directory for
+trusted provisioning state. The alternate container path avoids runc's masked
+securityfs mountpoint restriction; `--subdomainfs` explicitly points the parser there.
+`--kernel-features /apparmor-policy/features` is also mandatory: parser autodiscovery
+otherwise misses the mounted host feature set, producing incompatible network
+mediation on Ubuntu 26.04 despite successful policy loading. Single-job compilation
+and 512Mi/one-CPU init limits bound parser resource consumption. This endpoint grants policy
+administration, not kernel-enforced name-scoped authority; fixed reviewed source,
+image and command constrain its intended use. Admission must explicitly approve it.
+
+The immutable ConfigMap source hash and parser-reported single profile name are
+checked before `--add --skip-cache`; replace/remove are never used. After loading
+and verifying the enforcing label, the loader exclusively creates a root-owned
+0400 `codex-image-service-v1.sha256` sentinel in the dedicated seccomp directory.
+Reads use O_NOFOLLOW and descriptor metadata checks; the parent directory must be
+root-owned, non-symlink and not group/world writable. Restarts accept an enforcing
+label only with an exact trusted sentinel. Node reboots may reload the same source
+when the label is absent. Missing/mismatched state, symlinks, unsafe ownership,
+complain mode and source/name mismatch fail closed without replacement.
+The v1 source is immutable in this provisioning contract: changed bytes must
+fail against existing v1 state, not silently replace its policy. A future policy
+revision requires a separately reviewed name/version migration.
+The sentinel is trusted root provisioning state, not cryptographic attestation of
+live kernel policy. Out-of-band root policy mutation or root compromise is outside
+this trust model; reconcile such changes through separately reviewed provisioning.
+A crash after kernel load but before sentinel completion fails closed.
+Missing/unsupported AppArmor
+or parser ABI fails closed. No sysctl changes, privileged mode or SYS_ADMIN grant
+are introduced. The idle container remains nonroot, capability-free and mount-free.
+
+The image uses official `node:22-trixie-slim` and its AppArmor 4 parser package,
+not bookworm's AppArmor 3 parser. CI compiles the exact policy inside the built
+image with `--skip-kernel-load --skip-cache` before credential-free sandbox smoke.
+ConfigMap identity includes both policy and loader bytes so immutable ConfigMaps
+are not reused when installer logic changes. The installer pod uses the configured
+registry pull secret; the Secret is never mounted into the loader.
+
+### Disposable validation and reproduction
+
+Validated on 2026-10-12 with the built `codex-image-service:apparmor-loader` image:
+
+| Disposable node | Kernel | Packaged parser | Loader + runtime sandbox |
+|---|---|---|---|
+| Ubuntu 24.04 cloud VM | 6.8.0-142-generic | 4.1.0 | Passed |
+| Ubuntu 26.04 cloud VM | 7.0.0-34-generic | 4.1.0 | Passed |
+
+Both final runs used the explicit mounted kernel features, 512Mi/one-CPU loader
+limits and only MAC_ADMIN. Both rejected changed source bytes and conflicting
+sentinels, accepted two same-source invocations, preserved unrelated profiles,
+and passed nonroot enforcing-label/capability and bounded sandbox checks.
+The exact policy SHA-256 remained
+`54393c5a2c3577e1400c6aec09ed8c2142ec1e7934053ea385888245fa96aba5`;
+no AppArmor or seccomp grants were broadened to fix mount/feature discovery.
+These are Docker default-seccomp container tests inside disposable VMs, not a
+live Kubernetes rollout or proof of every CRI's RuntimeDefault implementation.
+
+`node tests/image-service-loader.cjs` covers add, restart, node reboot, absent or
+conflicting state, symlinks, unsafe permissions/ownership, source/name drift,
+complain mode and kernel refusal. `ruby tests/image-service.rb` checks exact
+rendered security contexts, host paths, immutable source/loader bytes and pull secret.
+
+`tests/image-service-loader-vm.py` runs the same image/loader in disposable Ubuntu
+cloud VMs using KVM and cloud-init, without SSH or credentials. Export
+`codex-image-service:apparmor-loader` with `docker save -o <workdir>/image.tar`, then:
+
+```sh
+python3 tests/image-service-loader-vm.py \
+  --cloud-image /path/to/ubuntu-cloud.img --workdir /path/to/fresh-workdir
+```
+
+The workdir must be dedicated and contain only test artifacts: it is shared with
+the disposable VM to import the image/policies and capture logs. The VM's loader
+container sees only the narrow AppArmor endpoint, dedicated provisioning directory
+and read-only source; Docker default seccomp, MAC_ADMIN only, read-only rootfs,
+no-new-privileges and 512Mi/one-CPU limits are enforced. Tests perform two successful
+loader invocations, reject source/sentinel conflicts, preserve every preexisting
+profile, bind the nonroot runtime to the enforcing label, verify zero capabilities,
+and run credential-free workspace/network sandbox assertions with bounded seccomp.
+VM apt downloads require network; no host/production AppArmor writes are performed.
 
 Ingress remains TCP 8091 only from the combined namespace `venu` AND pod name
 labels `venu-api`/`worker`; required client configuration is render-tested. The

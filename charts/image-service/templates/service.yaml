@@ -25,6 +25,8 @@ spec:
       app.kubernetes.io/name: codex-image-service
   template:
     metadata:
+      annotations:
+        checksum/apparmor-profile: {{ required "AppArmor profile artifact is required" (.Files.Get "files/apparmor.profile") | sha256sum | quote }}
       labels:
         app.kubernetes.io/name: codex-image-service
         app.kubernetes.io/part-of: {{ .Values.partOf | quote }}
@@ -53,9 +55,10 @@ spec:
           image: {{ printf "%s:%s" .Values.image.repository $tag | quote }}
           imagePullPolicy: IfNotPresent
           securityContext:
-            # Docker/containerd default AppArmor blocks bubblewrap namespace mounts.
+            # Must be preloaded on eligible nodes; missing policies fail closed.
             appArmorProfile:
-              type: Unconfined
+              type: Localhost
+              localhostProfile: codex-image-service-v1
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
