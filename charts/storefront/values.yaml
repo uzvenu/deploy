@@ -49,6 +49,9 @@ panel:
 route:
   enabled: true
   name: storefront
+  # Same-origin API uploads pass through this route. NGINX Gateway Fabric's
+  # 1 MiB default is too small for the backend's bounded 8 MiB image uploads.
+  maxBodySize: 100m
   # The cluster's shared gateway: the same one for every brand.
   gatewayName: main-gateway
   gatewayNamespace: default

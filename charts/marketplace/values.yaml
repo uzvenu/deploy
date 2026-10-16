@@ -154,6 +154,9 @@ backup:
 route:
   enabled: true
   name: api
+  # NGINX Gateway Fabric defaults request bodies to 1 MiB. The API accepts
+  # bounded multipart uploads (including 8 MiB virtual try-on images).
+  maxBodySize: 100m
   # The cluster's shared gateway: the same one for every brand.
   gatewayName: main-gateway
   gatewayNamespace: default

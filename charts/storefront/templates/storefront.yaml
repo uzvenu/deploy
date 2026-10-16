@@ -140,5 +140,21 @@ spec:
           name: {{ .Values.name }}
           port: {{ .Values.service.port }}
           weight: 1
+{{- with .Values.route.maxBodySize }}
+---
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: {{ $.Values.route.name }}-client-settings
+  labels:
+    app.kubernetes.io/part-of: {{ $.Values.partOf }}
+spec:
+  body:
+    maxSize: {{ . | quote }}
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: {{ $.Values.route.name }}
+{{- end }}
 {{- end }}
 {{- end }}
