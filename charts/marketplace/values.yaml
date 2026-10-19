@@ -62,6 +62,12 @@ image:
   repository: registry.iprogrammer.uz/venu/backend
   tag: bootstrap
 
+addresses:
+  internationalEnabled: false
+  # Empty allows all ISO countries when international addresses are enabled.
+  allowedCountryCodes: [UZ]
+  defaultCountryCode: UZ
+
 productImport:
   contentAIEnabled: false
   imageSource: excel

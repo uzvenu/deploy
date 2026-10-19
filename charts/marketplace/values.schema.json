@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "addresses": {
+      "type": "object",
+      "required": [
+        "internationalEnabled",
+        "allowedCountryCodes",
+        "defaultCountryCode"
+      ],
+      "properties": {
+        "internationalEnabled": {
+          "type": "boolean"
+        },
+        "allowedCountryCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "description": "Empty allows all ISO countries when international addresses are enabled."
+        },
+        "defaultCountryCode": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        }
+      }
+    }
+  }
+}

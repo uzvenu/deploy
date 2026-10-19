@@ -86,6 +86,7 @@ spec:
                 name: {{ . | quote }}
             {{- end }}
           env:
+            {{- include "marketplace.addressesEnv" . | nindent 12 }}
             {{- with .Values.storefront }}
             - name: APP_STOREFRONT_BASE_URL
               value: {{ required "storefront.baseURL is required when storefront is configured" .baseURL | quote }}
