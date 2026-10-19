@@ -55,6 +55,10 @@ spec:
                 name: {{ .Values.api.virtualTryOnSecretName }}
 {{- end }}
           env:
+            {{- with .Values.storefront }}
+            - name: APP_STOREFRONT_BASE_URL
+              value: {{ required "storefront.baseURL is required when storefront is configured" .baseURL | quote }}
+            {{- end }}
             - name: APP_PRODUCT_IMPORT_AI_ENABLED
               value: {{ .Values.productImport.contentAIEnabled | quote }}
             - name: APP_PRODUCT_IMPORT_IMAGE_SOURCE
