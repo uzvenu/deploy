@@ -1,0 +1,61 @@
+{{- if and .Values.enabled .Values.sellerAgent.enabled .Values.sellerAgent.secretName }}
+{{- $env := dict }}
+{{- range .Values.modernAgent.extraEnv }}
+{{- if has .name (list "BRAND_NAME" "BRAND_SITE" "BRAND_PRODUCT_PATH" "BRAND_RESPONSE_LANGUAGE" "CATALOG_PROVIDER" "CATALOG_API_BASE" "CATALOG_SITE_BASE") }}
+{{- $_ := set $env .name . }}
+{{- end }}
+{{- end }}
+{{- range .Values.sellerAgent.extraEnv }}
+{{- $_ := set $env .name . }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.sellerAgent.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.sellerAgent.name }}
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.sellerAgent.name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.sellerAgent.name }}
+        app.kubernetes.io/part-of: {{ .Values.partOf }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.sellerAgent.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sellerAgent.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      imagePullSecrets:
+        - name: {{ .Values.registrySecretName }}
+      containers:
+        - name: seller-agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          args: ["-mode", "seller"]
+          env:
+            {{- range $name, $entry := $env }}
+            - {{ toYaml $entry | nindent 14 | trim }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.sellerAgent.secretName }}
+          # Seller-only mode has no HTTP listener; TCP probes would restart it forever.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+{{- end }}

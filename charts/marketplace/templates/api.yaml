@@ -91,6 +91,7 @@ spec:
             - name: APP_STOREFRONT_BASE_URL
               value: {{ required "storefront.baseURL is required when storefront is configured" .baseURL | quote }}
             {{- end }}
+            {{- include "marketplace.sellerImportEnv" . | nindent 12 }}
             - name: APP_PRODUCT_IMPORT_AI_ENABLED
               value: {{ .Values.productImport.contentAIEnabled | quote }}
             - name: APP_PRODUCT_IMPORT_IMAGE_SOURCE

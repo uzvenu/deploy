@@ -43,25 +43,13 @@ spec:
           ports:
             - name: http
               containerPort: 8090
+          {{- $defaults := list (dict "name" "ALERT_CHAT_ID" "value" .Values.modernAgent.alertChatID) (dict "name" "ALERT_SOURCE" "value" .Values.modernAgent.alertSource) }}
+          {{- $defaults = append $defaults (dict "name" "SERVER_REQUIRE_AUTH" "value" "true") }}
+          {{- if .Values.googleCredentialsSecretName }}
+          {{- $defaults = append $defaults (dict "name" "GOOGLE_CREDENTIALS_FILE" "value" "/secrets/google/creds.json") }}
+          {{- end }}
           env:
-            - name: SERVER_REQUIRE_AUTH
-              value: "true"
-            {{- if .Values.googleCredentialsSecretName }}
-            # Bilim bazasi Google Sheets'dan keladi; qaysi jadval/tab ekani
-            # secret'da (KB_SHEET_ID + KB_SHEET_RANGE). Faqat KB — guruh/sotuvchi
-            # tab'lari boshqa do'konniki, shuning uchun GOOGLE_SHEET_ID berilmaydi.
-            - name: GOOGLE_CREDENTIALS_FILE
-              value: /secrets/google/creds.json
-            {{- end }}
-            # Xato ogohlantirishlari: WARN va undan yuqori loglar shu Telegram
-            # chatiga ketadi. Sir emas — chat ID, shuning uchun manifestda.
-            - name: ALERT_CHAT_ID
-              value: {{ .Values.modernAgent.alertChatID | quote }}
-            - name: ALERT_SOURCE
-              value: {{ .Values.modernAgent.alertSource | quote }}
-            {{- with .Values.modernAgent.extraEnv }}
-{{ toYaml . | indent 12 }}
-            {{- end }}
+            {{- include "agent.mergeEnv" (list $defaults .Values.modernAgent.extraEnv) | nindent 12 }}
           envFrom:
             - secretRef:
                 name: {{ .Values.modernAgent.secretName }}

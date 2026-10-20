@@ -61,6 +61,12 @@ legacyAgent:
   extraEnv: []
 
 sellerAgent:
+  name: seller-agent
+  # Empty preserves the existing combined legacy process. Set for isolation.
+  secretName: ""
+  nodeSelector: {}
+  affinity: {}
+  extraEnv: []
   # Needs a control API token and at least one account before it can run.
   enabled: false
 

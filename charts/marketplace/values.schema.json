@@ -27,6 +27,48 @@
           "pattern": "^[A-Z]{2}$"
         }
       }
+    },
+    "productImport": {
+      "type": "object",
+      "required": [
+        "sellerImageMode",
+        "sellerGeneratedImageRoles"
+      ],
+      "properties": {
+        "sellerImageMode": {
+          "type": "string",
+          "enum": [
+            "generate",
+            "provided"
+          ]
+        },
+        "sellerGeneratedImageRoles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "product_only",
+              "mannequin",
+              "model"
+            ]
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "sellerImageMode": {
+            "const": "generate"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sellerGeneratedImageRoles": {
+            "minItems": 1
+          }
+        }
+      }
     }
   }
 }
