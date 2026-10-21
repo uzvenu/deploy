@@ -69,6 +69,7 @@ addresses:
   defaultCountryCode: UZ
 
 productImport:
+  sellerTypedColorsEnabled: false
   sellerImageMode: generate
   sellerGeneratedImageRoles: [product_only, mannequin, model]
   contentAIEnabled: false

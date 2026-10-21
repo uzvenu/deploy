@@ -27,9 +27,13 @@ end
 %w[lattaputta venu theantique].each do |brand|
   values = "../backend/helm/#{brand}-values.yaml"
   policy = YAML.load_file(File.join(ROOT, values)).fetch('productImport')
+  expected_mode = brand == 'lattaputta' ? 'generate' : 'provided'
+  check(policy.fetch('sellerImageMode') == expected_mode, "#{brand}: only Latta may regenerate seller images")
+  check(policy.fetch('sellerGeneratedImageRoles').empty?, "#{brand}: provided policy must have no generation roles") unless brand == 'lattaputta'
   docs = render('charts/marketplace', values)
   %w[venu-api worker].each do |name|
     actual = env(container(docs, name))
+    check(actual['APP_PRODUCT_IMPORT_SELLER_TYPED_COLORS_ENABLED'] == (brand == 'lattaputta').to_s, "#{brand}/#{name}: typed colors must be Latta-only")
     check(actual['APP_PRODUCT_IMPORT_SELLER_IMAGE_MODE'] == policy.fetch('sellerImageMode'), "#{brand}/#{name}: seller mode")
     check(actual['APP_PRODUCT_IMPORT_SELLER_GENERATED_IMAGE_ROLES'] == policy.fetch('sellerGeneratedImageRoles').join(','), "#{brand}/#{name}: CSV roles, including explicit empty list")
   end
@@ -38,7 +42,8 @@ end
   docs = render('charts/agent', agent_values)
   modern_name = config.fetch('modernAgent').fetch('name')
   modern = container(docs, modern_name)
-  expected_mode = brand == 'theantique' ? 'provided' : 'generate'
+  check(env(modern)['SELLER_TYPED_COLORS_ENABLED'] == (brand == 'lattaputta').to_s, "#{brand}: modern typed color flag")
+
   check(env(modern)['SELLER_IMPORT_IMAGE_MODE'] == expected_mode, "#{brand}: modern import policy missing")
   check(modern.fetch('env').count { |e| e['name'] == 'SELLER_IMPORT_IMAGE_MODE' } == 1, 'Modern policy must occur exactly once')
   independent = render('charts/agent', agent_values, ['--set', 'sellerAgent.enabled=false', '--set-json', 'sellerAgent.extraEnv=[{"name":"SELLER_IMPORT_IMAGE_MODE","value":"provided"}]'])
@@ -53,6 +58,7 @@ end
     c = container(docs, 'lattaputta-agent')
     check(c['args'] == ['-mode', 'telegram,instagram,whatsapp,seller'], 'Latta modes changed')
     check(env(c)['SELLER_IMPORT_IMAGE_MODE'] == 'generate', 'Combined seller extraEnv missing')
+    check(env(c)['SELLER_TYPED_COLORS_ENABLED'] == 'true', 'Latta combined color flag missing')
     check(c.fetch('env').count { |e| e['name'] == 'SELLER_IMPORT_IMAGE_MODE' } == 1, 'Legacy policy must occur exactly once')
     merged = render('charts/agent', agent_values, ['--set-json', 'legacyAgent.extraEnv=[{"name":"SELLER_IMPORT_IMAGE_MODE","value":"provided"},{"name":"ALERT_SOURCE","value":"first"},{"name":"ALERT_SOURCE","value":"last"}]', '--set-json', 'sellerAgent.extraEnv=[{"name":"SELLER_IMPORT_IMAGE_MODE","value":"provided"},{"name":"SELLER_IMPORT_IMAGE_MODE","value":"generate"}]'])
     legacy = container(merged, 'lattaputta-agent')
@@ -61,6 +67,7 @@ end
   else
     c = container(docs, 'seller-agent')
     check(c['args'] == ['-mode', 'seller'], 'Seller mode must be isolated')
+    check(env(c)['SELLER_TYPED_COLORS_ENABLED'] == 'false', 'Other brands must disable typed colors')
     check(c['envFrom'] == [{'secretRef' => {'name' => "#{brand}-seller-agent-env"}}], 'Customer Secret leaked')
     modern = container(docs, 'agent')
     %w[BRAND_NAME BRAND_SITE BRAND_PRODUCT_PATH CATALOG_PROVIDER CATALOG_API_BASE CATALOG_SITE_BASE].each do |key|
@@ -88,7 +95,8 @@ override = render('charts/agent', values, ['--set', 'sellerAgent.extraEnv[2].nam
 check(env(container(override, 'seller-agent'))['BRAND_NAME'] == 'Override', 'Seller public override lost')
 values = '../backend/helm/venu-values.yaml'
 render('charts/marketplace', values, ['--set', 'productImport.sellerImageMode=search'], success: false)
-render('charts/marketplace', values, ['--set-json', 'productImport.sellerGeneratedImageRoles=[]'], success: false)
+render('charts/marketplace', values, ['--set', 'productImport.sellerImageMode=generate', '--set-json', 'productImport.sellerGeneratedImageRoles=[]'], success: false)
 render('charts/marketplace', values, ['--set-json', 'productImport.sellerGeneratedImageRoles=["model","model"]'], success: false)
 render('charts/marketplace', values, ['--set-json', 'productImport.sellerGeneratedImageRoles=["invalid"]'], success: false)
+render('charts/marketplace', '../backend/helm/venu-values.yaml', ['--set-string', 'productImport.sellerTypedColorsEnabled=invalid'], success: false)
 puts 'Seller wiring checks passed'

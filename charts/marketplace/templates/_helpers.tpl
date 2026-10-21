@@ -9,6 +9,8 @@
 
 {{/* Viper decodes string slices from CSV; an empty string explicitly clears defaults. */}}
 {{- define "marketplace.sellerImportEnv" -}}
+- name: APP_PRODUCT_IMPORT_SELLER_TYPED_COLORS_ENABLED
+  value: {{ .Values.productImport.sellerTypedColorsEnabled | default false | quote }}
 - name: APP_PRODUCT_IMPORT_SELLER_IMAGE_MODE
   value: {{ .Values.productImport.sellerImageMode | quote }}
 - name: APP_PRODUCT_IMPORT_SELLER_GENERATED_IMAGE_ROLES

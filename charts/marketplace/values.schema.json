@@ -53,6 +53,10 @@
               "model"
             ]
           }
+        },
+        "sellerTypedColorsEnabled": {
+          "type": "boolean",
+          "default": false
         }
       },
       "if": {
