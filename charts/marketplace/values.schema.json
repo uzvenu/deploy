@@ -69,6 +69,15 @@
           }
         }
       }
+    },
+    "api": {
+      "type": "object",
+      "properties": {
+        "emuEnabled": {
+          "type": "boolean",
+          "description": "Optional API/worker EMU switch; omit to preserve envFrom Secret control (backend default false)."
+        }
+      }
     }
   }
 }

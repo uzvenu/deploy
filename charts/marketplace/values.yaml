@@ -99,6 +99,9 @@ api:
   btsEnabled: false
   yandexEnabled: false
   dhlEnabled: false
+  # Optional: omit to preserve APP_DELIVERY_EMU_ENABLED from api.secretName.
+  # The backend default is false. Explicit false overrides the Secret (kill switch).
+  # emuEnabled: false
   dhlBaseURL: https://express.api.dhl.com/mydhlapi/test
   # Not brand-named despite appearances, and not safe to change per brand: the
   # storefront's CD bakes BACKEND_URL=http://venu-api:8080 into the shared image

@@ -152,3 +152,22 @@ lands on all of them.
 
 This repository is public because it holds no secret values — only Secret names.
 The private values repositories are read through an Argo CD repository credential.
+
+### Optional EMU delivery switch
+
+`charts/marketplace` maps optional `api.emuEnabled` to the explicit string
+`APP_DELIVERY_EMU_ENABLED` in both API and worker containers. The Antique backend
+values opt in with `api.emuEnabled: true`. An explicit `false` is a kill switch
+and overrides the same key from `api.secretName`. When omitted, the chart emits
+no EMU environment entry, preserving Secret-based control for existing brands;
+the backend itself defaults to disabled. There is intentionally no active chart
+default of `false`, since it would override existing Secret settings.
+
+Keep `APP_DELIVERY_EMU_API_KEY` and `APP_DELIVERY_EMU_CITY_IDS_JSON` in the existing
+brand Secret, not Helm values. Enabling the flag alone does not make EMU ready:
+a nonblank key and verified local district UUID → EMU new-system city ID mapping
+are required; missing credentials or an empty map keep quote/dispatch unwired.
+The backend defaults to the official `https://api.emu.uz/api/v1/b2b` endpoint.
+This wiring does not change any live Secret or enable the carrier in production.
+
+Regression check (Ruby standard library + Helm): `ruby charts/marketplace/tests/emu.rb`.

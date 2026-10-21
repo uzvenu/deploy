@@ -14,3 +14,11 @@
 - name: APP_PRODUCT_IMPORT_SELLER_GENERATED_IMAGE_ROLES
   value: {{ join "," .Values.productImport.sellerGeneratedImageRoles | quote }}
 {{- end -}}
+
+{{/* Absence preserves envFrom Secret control; explicit false is a kill switch. */}}
+{{- define "marketplace.emuEnv" -}}
+{{- if hasKey .Values.api "emuEnabled" }}
+- name: APP_DELIVERY_EMU_ENABLED
+  value: {{ .Values.api.emuEnabled | quote }}
+{{- end }}
+{{- end -}}
