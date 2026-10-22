@@ -17,6 +17,8 @@
 - name: APP_PRODUCT_IMPORT_MODEL_REFERENCE_KEY
   value: {{ .Values.productImport.modelReferenceKey | quote }}
 {{- end }}
+- name: APP_PRODUCT_IMPORT_SELLER_TRY_ON_ENABLED
+  value: {{ .Values.productImport.sellerTryOnEnabled | default false | quote }}
 - name: APP_PRODUCT_IMPORT_SELLER_TYPED_COLORS_ENABLED
   value: {{ .Values.productImport.sellerTypedColorsEnabled | default false | quote }}
 - name: APP_PRODUCT_IMPORT_SELLER_IMAGE_MODE

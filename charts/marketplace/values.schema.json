@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "productTryOnDefault": { "type": "boolean", "default": false },
     "addresses": {
       "type": "object",
       "required": [
@@ -62,6 +63,7 @@
             ]
           }
         },
+        "sellerTryOnEnabled": { "type": "boolean", "default": false },
         "sellerTypedColorsEnabled": {
           "type": "boolean",
           "default": false

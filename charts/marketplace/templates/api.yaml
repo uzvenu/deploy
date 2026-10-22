@@ -86,6 +86,8 @@ spec:
                 name: {{ . | quote }}
             {{- end }}
           env:
+            - name: APP_BRAND_PRODUCT_TRY_ON_DEFAULT
+              value: {{ .Values.productTryOnDefault | default false | quote }}
             {{- include "marketplace.addressesEnv" . | nindent 12 }}
             {{- include "marketplace.emuEnv" . | nindent 12 }}
             {{- with .Values.storefront }}

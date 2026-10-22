@@ -33,6 +33,10 @@ end
   docs = render('charts/marketplace', values)
   %w[venu-api worker].each do |name|
     actual = env(container(docs, name))
+    check(actual["APP_PRODUCT_IMPORT_SELLER_TRY_ON_ENABLED"] == (brand == "lattaputta").to_s, "#{brand}/#{name}: worker try-on isolation")
+    check(actual["APP_BRAND_PRODUCT_TRY_ON_DEFAULT"] == (brand == "lattaputta").to_s, "#{brand}: create default isolation") if name == "venu-api"
+    reference = actual["APP_PRODUCT_IMPORT_MODEL_REFERENCE_KEY"]
+    check(brand == "lattaputta" ? !reference.to_s.empty? : reference.to_s.empty?, "#{brand}/#{name}: model reference isolation")
     check(actual['APP_PRODUCT_IMPORT_SELLER_TYPED_COLORS_ENABLED'] == (brand == 'lattaputta').to_s, "#{brand}/#{name}: typed colors must be Latta-only")
     check(actual['APP_PRODUCT_IMPORT_SELLER_IMAGE_MODE'] == policy.fetch('sellerImageMode'), "#{brand}/#{name}: seller mode")
     check(actual['APP_PRODUCT_IMPORT_SELLER_GENERATED_IMAGE_ROLES'] == policy.fetch('sellerGeneratedImageRoles').join(','), "#{brand}/#{name}: CSV roles, including explicit empty list")

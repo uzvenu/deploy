@@ -15,6 +15,9 @@
 # Whether this release deploys anything at all.
 enabled: true
 
+# New physical product default; explicit opt-outs and existing products are unchanged.
+productTryOnDefault: false
+
 # Optional app-of-apps bootstrap. A platform/root instance can declaratively
 # create per-brand child Applications; brand instances leave this disabled.
 brandApplications:
@@ -72,6 +75,7 @@ productImport:
   # Optional modelReferenceBucket: separate private S3 bucket when media storage is public.
   # Optional modelReferenceKey: private storage key, configured per brand only after upload.
   # Omit to retain envFrom Secret control; explicit empty string disables it.
+  sellerTryOnEnabled: false
   sellerTypedColorsEnabled: false
   sellerImageMode: generate
   sellerGeneratedImageRoles: [product_only, mannequin, model]
