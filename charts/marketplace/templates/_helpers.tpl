@@ -9,6 +9,14 @@
 
 {{/* Viper decodes string slices from CSV; an empty string explicitly clears defaults. */}}
 {{- define "marketplace.sellerImportEnv" -}}
+{{- if hasKey .Values.productImport "modelReferenceBucket" }}
+- name: APP_PRODUCT_IMPORT_MODEL_REFERENCE_BUCKET
+  value: {{ .Values.productImport.modelReferenceBucket | quote }}
+{{- end }}
+{{- if hasKey .Values.productImport "modelReferenceKey" }}
+- name: APP_PRODUCT_IMPORT_MODEL_REFERENCE_KEY
+  value: {{ .Values.productImport.modelReferenceKey | quote }}
+{{- end }}
 - name: APP_PRODUCT_IMPORT_SELLER_TYPED_COLORS_ENABLED
   value: {{ .Values.productImport.sellerTypedColorsEnabled | default false | quote }}
 - name: APP_PRODUCT_IMPORT_SELLER_IMAGE_MODE

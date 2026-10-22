@@ -35,6 +35,14 @@
         "sellerGeneratedImageRoles"
       ],
       "properties": {
+        "modelReferenceBucket": {
+          "type": "string",
+          "description": "Optional separate private S3 bucket for identity references; uses existing storage endpoint and credentials. Never the public media bucket."
+        },
+        "modelReferenceKey": {
+          "type": "string",
+          "description": "Optional private storage object key for a consented model face reference. Omit to preserve envFrom Secret control; empty disables the reference. Never a URL or asset bytes."
+        },
         "sellerImageMode": {
           "type": "string",
           "enum": [

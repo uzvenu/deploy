@@ -69,6 +69,9 @@ addresses:
   defaultCountryCode: UZ
 
 productImport:
+  # Optional modelReferenceBucket: separate private S3 bucket when media storage is public.
+  # Optional modelReferenceKey: private storage key, configured per brand only after upload.
+  # Omit to retain envFrom Secret control; explicit empty string disables it.
   sellerTypedColorsEnabled: false
   sellerImageMode: generate
   sellerGeneratedImageRoles: [product_only, mannequin, model]
