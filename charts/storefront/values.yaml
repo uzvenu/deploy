@@ -43,6 +43,8 @@ panel:
   # panel API service when a brand's public storefront is also its API origin.
   # The wider /api prefix belongs to storefront handlers such as NextAuth.
   apiDirect: false
+  # Opt-in integration paths; never route all /api because NextAuth owns /api/auth.
+  additionalBackendPrefixes: []
   serviceName: venu-api
   servicePort: 8080
 
