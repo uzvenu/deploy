@@ -28,7 +28,9 @@ def check_env(brand, expected, settings = [])
   end
 end
 
-%w[venu lattaputta].each { |brand| check_env(brand, nil) }
+check_env('venu', nil)
+check_env('lattaputta', 'true')
+check_env('lattaputta', 'false', ['--set', 'api.emuEnabled=false'])
 check_env('theantique', 'true')
 check_env('theantique', 'false', ['--set', 'api.emuEnabled=false'])
 check_env('venu', 'true', ['--set', 'api.emuEnabled=true'])

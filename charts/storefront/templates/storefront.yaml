@@ -115,6 +115,11 @@ spec:
         - path:
             type: PathPrefix
             value: /assets
+        {{- range .Values.panel.additionalBackendPrefixes }}
+        - path:
+            type: PathPrefix
+            value: {{ . | quote }}
+        {{- end }}
         {{- if .Values.panel.apiDirect }}
         - path:
             type: PathPrefix
