@@ -156,7 +156,7 @@ The private values repositories are read through an Argo CD repository credentia
 ### Optional EMU delivery switch
 
 `charts/marketplace` maps optional `api.emuEnabled` to the explicit string
-`APP_DELIVERY_EMU_ENABLED` in both API and worker containers. The Antique backend
+`APP_DELIVERY_EMU_ENABLED` in both API and worker containers. The Antique and Latta Putta backend
 values opt in with `api.emuEnabled: true`. An explicit `false` is a kill switch
 and overrides the same key from `api.secretName`. When omitted, the chart emits
 no EMU environment entry, preserving Secret-based control for existing brands;
