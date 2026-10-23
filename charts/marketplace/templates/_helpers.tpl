@@ -9,6 +9,8 @@
 
 {{/* Viper decodes string slices from CSV; an empty string explicitly clears defaults. */}}
 {{- define "marketplace.sellerImportEnv" -}}
+- name: APP_PRODUCT_IMPORT_IMAGE_AI_PROVIDER
+  value: {{ .Values.productImport.imageAIProvider | default "openai" | quote }}
 {{- if hasKey .Values.productImport "modelReferenceBucket" }}
 - name: APP_PRODUCT_IMPORT_MODEL_REFERENCE_BUCKET
   value: {{ .Values.productImport.modelReferenceBucket | quote }}

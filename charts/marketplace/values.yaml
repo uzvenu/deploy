@@ -72,6 +72,8 @@ addresses:
   defaultCountryCode: UZ
 
 productImport:
+  # Explicit env overrides envFrom Secrets for both API and worker; text LLM is independent.
+  imageAIProvider: openai
   # Optional modelReferenceBucket: separate private S3 bucket when media storage is public.
   # Optional modelReferenceKey: private storage key, configured per brand only after upload.
   # Omit to retain envFrom Secret control; explicit empty string disables it.

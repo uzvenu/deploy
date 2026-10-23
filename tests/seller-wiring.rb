@@ -33,6 +33,7 @@ end
   docs = render('charts/marketplace', values)
   %w[venu-api worker].each do |name|
     actual = env(container(docs, name))
+    check(actual['APP_PRODUCT_IMPORT_IMAGE_AI_PROVIDER'] == 'openai', "#{brand}/#{name}: image generation must use OpenAI only, overriding envFrom")
     check(actual["APP_PRODUCT_IMPORT_SELLER_TRY_ON_ENABLED"] == (brand == "lattaputta").to_s, "#{brand}/#{name}: worker try-on isolation")
     check(actual["APP_BRAND_PRODUCT_TRY_ON_DEFAULT"] == (brand == "lattaputta").to_s, "#{brand}: create default isolation") if name == "venu-api"
     reference = actual["APP_PRODUCT_IMPORT_MODEL_REFERENCE_KEY"]
@@ -62,6 +63,9 @@ end
     c = container(docs, 'lattaputta-agent')
     check(c['args'] == ['-mode', 'telegram,instagram,whatsapp,seller'], 'Latta modes changed')
     check(env(c)['SELLER_IMPORT_IMAGE_MODE'] == 'generate', 'Combined seller extraEnv missing')
+        check(env(c)['SELLER_IMAGE_FAILURE_ADMIN_ID'] == '1769851684', 'Missing explicit requester image failure target')
+        check(env(c)['SELLER_IMAGE_FAILURE_ADMIN_ALLOWLIST'] == '1769851684', 'Missing notification-only allowlist')
+        check(!env(c).key?('ADMIN_USER_IDS'), 'Notification permissions must not overwrite admin-bot access')
     check(env(c)['SELLER_TYPED_COLORS_ENABLED'] == 'true', 'Latta combined color flag missing')
     check(c.fetch('env').count { |e| e['name'] == 'SELLER_IMPORT_IMAGE_MODE' } == 1, 'Legacy policy must occur exactly once')
     merged = render('charts/agent', agent_values, ['--set-json', 'legacyAgent.extraEnv=[{"name":"SELLER_IMPORT_IMAGE_MODE","value":"provided"},{"name":"ALERT_SOURCE","value":"first"},{"name":"ALERT_SOURCE","value":"last"}]', '--set-json', 'sellerAgent.extraEnv=[{"name":"SELLER_IMPORT_IMAGE_MODE","value":"provided"},{"name":"SELLER_IMPORT_IMAGE_MODE","value":"generate"}]'])
