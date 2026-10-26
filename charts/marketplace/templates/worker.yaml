@@ -1,4 +1,7 @@
 {{- if and .Values.enabled .Values.worker.enabled }}
+{{- if lt (int .Values.worker.terminationGracePeriodSeconds) 650 }}
+{{- fail "worker.terminationGracePeriodSeconds must be at least 650 (600s drain + 20s flush + margin)" }}
+{{- end }}
 # Venu worker — background jobs (cmd/worker). Same image as the API, runs the
 # worker binary instead. Separate Deployment so it scales independently and a
 # slow job never starves an HTTP request. No HTTP port, no JWT keys needed.
@@ -26,6 +29,8 @@ spec:
         prometheus.io/port: "9090"
         prometheus.io/path: /metrics
     spec:
+      # cmd/worker: 600s drain + 20s queue flush; leave 30s runtime margin.
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
       {{- with .Values.worker.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

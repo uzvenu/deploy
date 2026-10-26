@@ -136,6 +136,8 @@ storage:
 worker:
   enabled: true
   name: worker
+  # Must exceed the worker binary shutdown budget (620s).
+  terminationGracePeriodSeconds: 650
   # Optional pod-level security context, scoped per brand through its values file.
   podSecurityContext: {}
   # Optional hard placement for stateless worker pods. Keep empty for scheduler choice.
