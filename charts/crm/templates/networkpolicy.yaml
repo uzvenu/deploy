@@ -63,4 +63,7 @@ spec:
           port: 5432
         - protocol: TCP
           port: 443
+        # Authenticated SMTP submission with STARTTLS (Brevo).
+        - protocol: TCP
+          port: 587
 {{- end }}
