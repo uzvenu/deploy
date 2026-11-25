@@ -160,7 +160,38 @@ spec:
                 operator: In
                 values:
                   {{- toYaml (required "clientPodNames is required" .Values.clientPodNames) | nindent 18 }}
+        {{- range (.Values.externalClients.sourceCIDRs | default list) }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+        {{- end }}
       ports:
         - protocol: TCP
           port: 8091
+{{- $nodePort := int (.Values.externalClients.nodePort | default 0) }}
+{{- if $nodePort }}
+{{- if not .Values.externalClients.sourceCIDRs }}
+{{- fail "externalClients.sourceCIDRs is required with externalClients.nodePort: the NetworkPolicy would otherwise drop every external request" }}
+{{- end }}
+---
+# Reachable from clients outside this cluster (the standalone venu cluster's
+# Latta Putta API). Local traffic policy keeps the client's source address so
+# the NetworkPolicy ipBlock above can match it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: codex-image-service-external
+  labels:
+    app.kubernetes.io/name: codex-image-service
+    app.kubernetes.io/part-of: {{ .Values.partOf | quote }}
+spec:
+  type: NodePort
+  externalTrafficPolicy: Local
+  selector:
+    app.kubernetes.io/name: codex-image-service
+  ports:
+    - name: http
+      port: 8091
+      targetPort: http
+      nodePort: {{ $nodePort }}
+{{- end }}
 {{- end }}
