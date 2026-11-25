@@ -12,11 +12,6 @@ authSecretName: ""
 envSecretName: ""
 clientNamespace: ""
 clientPodNames: []
-# Clients in another cluster. nodePort 0 keeps the service cluster-internal;
-# sourceCIDRs are the client addresses the NetworkPolicy admits.
-externalClients:
-  nodePort: 0
-  sourceCIDRs: []
 resources:
   requests:
     cpu: 250m
