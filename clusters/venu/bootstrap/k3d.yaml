@@ -1,0 +1,46 @@
+# Standalone Kubernetes for Venu / Latta Putta / The Antique, running beside the
+# legacy k3s-agent on this host. See uzvenu/deploy clusters/venu/README.md.
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: venu
+servers: 1
+agents: 0
+image: rancher/k3s:v1.35.5-k3s1
+network: venu-k3d
+kubeAPI:
+  host: "127.0.0.1"
+  hostIP: "127.0.0.1"
+  hostPort: "6550"
+volumes:
+  - volume: /srv/venu-k8s/storage:/var/lib/rancher/k3s/storage
+    nodeFilters: [server:0]
+ports:
+  # Gateway HTTP NodePort: host nginx (localhost) and the legacy cluster bridge (netbird).
+  - port: 127.0.0.1:31025:30025
+    nodeFilters: [server:0:direct]
+  - port: 100.100.141.147:31025:30025
+    nodeFilters: [server:0:direct]
+  # Latta Putta venu-api bridge for workloads still on the legacy cluster.
+  - port: 100.100.141.147:31080:30080
+    nodeFilters: [server:0:direct]
+options:
+  k3d:
+    wait: true
+    timeout: 300s
+    disableLoadbalancer: true
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters: [server:0]
+      - arg: --disable=servicelb
+        nodeFilters: [server:0]
+      - arg: --tls-san=127.0.0.1
+        nodeFilters: [server:0]
+  kubeconfig:
+    updateDefaultKubeconfig: false
+    switchCurrentContext: false
+  runtime:
+    labels:
+      - label: venu.uz/cluster=venu
+        nodeFilters: [server:0]

@@ -1,0 +1,17 @@
+# The Gateway every chart's HTTPRoute attaches to (route.gatewayName/Namespace).
+# NGF publishes it on NodePort 30025; k3d maps that to host port 31025, which
+# the host nginx (TLS) proxies to.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: main-gateway
+  namespace: default
+spec:
+  gatewayClassName: nginx
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All

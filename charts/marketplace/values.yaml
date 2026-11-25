@@ -32,7 +32,7 @@ imageServiceApplication:
 
 # Optional standalone CRM bootstrap owned by the existing platform/root instance.
 # Namespace provisioning, registration and automatic deployment are separate phases.
-# These opt-in defaults mirror argocd/crm.yaml; they do not identify a marketplace brand.
+# These opt-in defaults mirror clusters/venu/reference/crm.yaml; they do not identify a marketplace brand.
 crmApplication:
   enabled: false
   namespaceEnabled: false

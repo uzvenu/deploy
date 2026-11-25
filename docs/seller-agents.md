@@ -100,7 +100,7 @@ values, assert policy and Secret isolation, preserve combined mode, and reject
 invalid policies and duplicate seller mode. Lint/render marketplace and agent
 with all three brand files, and storefront with all three available real brand
 files. Latta Putta's storefront Argo application still uses raw Kustomize
-(`argocd/venu-frontend.yaml`); its application repository also supplies a Helm
+(`clusters/venu/argocd/venu-frontend.yaml`); its application repository also supplies a Helm
 values file for chart validation.
 
 Modern/admin import policy comes only from `modernAgent.extraEnv`, independently

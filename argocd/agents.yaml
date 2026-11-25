@@ -15,6 +15,20 @@ spec:
         releaseName: agents
         valueFiles:
           - $values/helm/lattaputta-values.yaml
+        parameters:
+          # Latta Putta's agents run on the standalone venu cluster
+          # (clusters/venu/argocd/agents.yaml). Only the shared chatbot
+          # PostgreSQL used by Motiv and Rocketpark stays here.
+          - name: modernAgent.enabled
+            value: "false"
+          - name: legacyAgent.enabled
+            value: "false"
+          - name: sellerAgent.enabled
+            value: "false"
+          - name: outreach.enabled
+            value: "false"
+          - name: route.enabled
+            value: "false"
     - repoURL: https://github.com/uzvenu/chatbot.git
       targetRevision: main
       ref: values

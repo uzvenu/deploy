@@ -1,0 +1,116 @@
+# Legacy cluster side of the venu cluster split (see clusters/venu/README.md).
+# Applied by hand after the venu workloads have left this cluster.
+#
+# 1. Public hostnames whose DNS still points at this cluster's gateway
+#    (82.25.190.52) are forwarded to the venu cluster's gateway over netbird.
+#    The Instagram webhook keeps its own Exact route in namespace venu, which
+#    takes precedence over these prefix routes.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: venu-bridge
+  labels:
+    app.kubernetes.io/part-of: cluster-bridge
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: venu-cluster-gateway
+  namespace: venu-bridge
+  labels:
+    app.kubernetes.io/part-of: cluster-bridge
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 31025
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: venu-cluster-gateway
+  namespace: venu-bridge
+  labels:
+    kubernetes.io/service-name: venu-cluster-gateway
+    app.kubernetes.io/part-of: cluster-bridge
+addressType: IPv4
+ports:
+  - name: http
+    port: 31025
+    protocol: TCP
+endpoints:
+  - addresses: ["100.100.141.147"]
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: venu-cluster
+  namespace: venu-bridge
+  labels:
+    app.kubernetes.io/part-of: cluster-bridge
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: default
+  hostnames:
+    - venu.iprogrammer.uz
+    - venu-api.iprogrammer.uz
+    - lattaputta.iprogrammer.uz
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: venu-cluster-gateway
+          port: 80
+---
+# Same upload limit the API route had here (charts/marketplace api-client-settings).
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: venu-cluster-client-settings
+  namespace: venu-bridge
+  labels:
+    app.kubernetes.io/part-of: cluster-bridge
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: venu-cluster
+  body:
+    maxSize: 100m
+---
+# 2. Motiv and Rocketpark keep CATALOG_API_BASE=http://venu-api.venu.svc...:8080.
+#    This selectorless Service replaces the moved one and points at the venu
+#    cluster's venu-api NodePort (clusters/venu/bridges.yaml).
+apiVersion: v1
+kind: Service
+metadata:
+  name: venu-api
+  namespace: venu
+  labels:
+    app.kubernetes.io/part-of: cluster-bridge
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 31080
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: venu-api-venu-cluster
+  namespace: venu
+  labels:
+    kubernetes.io/service-name: venu-api
+    app.kubernetes.io/part-of: cluster-bridge
+addressType: IPv4
+ports:
+  - name: http
+    port: 31080
+    protocol: TCP
+endpoints:
+  - addresses: ["100.100.141.147"]

@@ -21,6 +21,12 @@ spec:
           # and is reached through clusters/venu/bridges.yaml.
           - name: imageServiceApplication.enabled
             value: "false"
+        parameters:
+          # The Codex image service needs host AppArmor/seccomp provisioning, which
+          # this k3s-in-Docker cluster does not do; it stays on the legacy cluster
+          # and is reached through clusters/venu/bridges.yaml.
+          - name: imageServiceApplication.enabled
+            value: "false"
     - repoURL: https://github.com/uzvenu/backend.git
       targetRevision: master
       ref: values
