@@ -37,6 +37,8 @@ ports:
     protocol: TCP
 endpoints:
   - addresses: ["172.30.0.1"]
+    conditions:
+      ready: true
 ---
 # 2. Motiv and Rocketpark (legacy cluster) read Latta Putta's catalog from
 #    venu-api.venu.svc. The legacy side resolves that name to this NodePort,
