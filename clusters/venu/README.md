@@ -33,8 +33,10 @@ The `venu` root still generates the other brands' Applications through
   from the legacy cluster keep their PV names and are pre-bound PVs with
   `hostPath.type: Directory`, so a pod never starts on an empty directory.
 - Access: `vk` on the host is `kubectl --kubeconfig /srv/venu-k8s/config/kubeconfig`.
-  The API listens on `127.0.0.1:6550` only. From a workstation, use
-  `ssh -L 6550:127.0.0.1:6550 venu`.
+  k3d serves the API on `127.0.0.1:6550`. `venu-k8s-api.socket` with
+  `systemd-socket-proxyd` republishes it only on the netbird address
+  `100.100.141.147:6550`. A workstation kubeconfig uses that server with
+  `tls-server-name: localhost`, because the certificate has no netbird SAN.
 - TLS stays on the host nginx (`/etc/nginx/sites-enabled/`). `venu.uz`, `the-antique.com`,
   `lattaputta.uz` and `crm.venu.uz` proxy to `127.0.0.1:31025`, which is the
   gateway NodePort 30025.
