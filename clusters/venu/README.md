@@ -5,9 +5,11 @@ Kubernetes on the venu server (`vm-v2-medium`, 195.26.230.199, netbird
 100.100.141.147), separate from the legacy cluster whose control plane is
 `de-vmmedium` (82.25.190.52).
 
-The server is still a worker of the legacy cluster (`k3s-agent`), so a second
-native k3s cannot run beside it. The venu cluster is k3s in Docker (k3d), with its
-own network namespace, containerd, ArgoCD and gateway.
+The venu cluster is k3s in Docker (k3d), with its own containerd, ArgoCD and
+gateway. It was built while the server was still a legacy worker, which ruled out a
+second native k3s. On 2026-11-25 the server was drained and deleted from the legacy
+cluster, and its `k3s-agent` was uninstalled. Nothing of the legacy cluster runs
+here now.
 
 ## Layout
 
@@ -38,7 +40,15 @@ The `venu` root still generates the other brands' Applications through
   gateway NodePort 30025.
 - PostgreSQL is the host's PostgreSQL 16. `pg_hba.conf` admits the k3d network
   `172.30.0.0/24` (docker network `venu-k3d`).
-- The node container restarts with Docker (`--restart=unless-stopped`).
+- On boot, `venu-k3d.service` waits for the netbird address on `wt0`, then starts the
+  node container. The container also has `--restart=unless-stopped`. k3d publishes
+  ports on that address, so the container fails to start if Docker brings it up
+  before netbird. `venu-cluster-bridge.service` is ordered after `venu-k3d.service`.
+- Pods reach PostgreSQL at the netbird address `100.100.141.147:5432`, so netbird
+  must be up for the databases to be reachable.
+- Backups from the split are in `/root/venu-cluster-split/`: nginx configs,
+  firewall rules, the k3s-agent unit and config. Released legacy volumes are in
+  `/srv/venu-k8s/legacy-backup/`.
 
 ## Links to the legacy cluster
 
@@ -51,8 +61,12 @@ The `venu` root still generates the other brands' Applications through
 
 The legacy cluster keeps the Codex image service, Motiv, Rocketpark, the shared
 chatbot PostgreSQL (`argocd/agents.yaml` renders only that), monitoring and the image
-registry. Images are still pulled from `registry.iprogrammer.uz`, which runs on the
-legacy cluster.
+registry. Images are pulled from `registry.iprogrammer.uz`, which deliberately stays
+on the legacy cluster. Grafana and Loki do not see this cluster.
+
+On the legacy cluster, only the bridges and the Instagram webhook route are left
+from the moved projects, in namespaces `venu` and `venu-bridge`. Its old manifests
+(no Secrets) are in `de-vmmedium:/root/venu-cluster-split/legacy-leftovers/`.
 
 ## Rebuild from scratch
 
@@ -75,6 +89,9 @@ vk apply -f argocd/
 ```
 
 ## Rollback to the legacy cluster
+
+This server is no longer a legacy node. A rollback has to run the workloads on
+another legacy node instead, and the volume data has to be copied there.
 
 1. Scale the venu cluster's workloads to 0, or delete its Applications with
    non-cascading deletion. Leaving both copies running duplicates Telegram polling
